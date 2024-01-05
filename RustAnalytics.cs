@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.10";
+        private const string _PluginVersion = "0.0.11";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _DownloadLink = "INSERT_LINK_HERE";
 
@@ -52,15 +52,16 @@ namespace Oxide.Plugins
 
         // Misc Variables
         private static RustAnalytics _pluginInstance;
-        private IEnumerator coroutine;
-        private SaveInfo _saveInfo = SaveInfo.Create(World.SaveFolderName +
-                                          $"/player.blueprints.{Rust.Protocol.persistance}.db");
-        
+        private SaveInfo _saveInfo = SaveInfo.Create(World.SaveFolderName + $"/player.blueprints.{Rust.Protocol.persistance}.db");
+        private readonly Hash<ulong, Action<ClientPerformanceReport>> _clientPerformanceReports = new();
+
+        // Coroutines
+        private IEnumerator webhookCoroutine;
+        private IEnumerator clientDataCoroutine;
+
+        // Harmony Variables
         private HInstance _harmonyInstance;
         private string HarmonyId => $"com.{_PluginAuthor}.{_PluginName}";
-        private readonly Hash<ulong, Action<ClientPerformanceReport>> _clientPerformanceReports = new();
-        
-
 
         private void Init()
         {
@@ -89,7 +90,8 @@ namespace Oxide.Plugins
         private void Unload()
         {
             // Stop all coroutines
-            if (coroutine != null) ServerMgr.Instance.StopCoroutine(coroutine);
+            if (webhookCoroutine != null) ServerMgr.Instance.StopCoroutine(webhookCoroutine);
+            if (clientDataCoroutine != null) ServerMgr.Instance.StopCoroutine(clientDataCoroutine);
 
             UnpatchHarmony();
             _pluginInstance = null;
@@ -182,11 +184,21 @@ namespace Oxide.Plugins
 
         public void StartGlobalTimers()
         {
-            ConsoleLog("Repeating Global Timer Started!");
+            // Call some functions before starting the timers so that they are immediately being collected.
+            CreateServerData();
+
+            ConsoleLog("Starting 10 minute timer...");
             timer.Every(600f, () =>
             {
                 _Debug("Global Repeating Timer");
                 CreateServerData();
+            });
+            ConsoleLog("Starting 60 second timer...");
+            timer.Every(60f, () =>
+            {
+                // Start the getPlayerClientDataCoroutine
+                clientDataCoroutine = getPlayerClientDataCoroutine();
+                ServerMgr.Instance.StartCoroutine(clientDataCoroutine);
             });
         }
 
@@ -287,15 +299,27 @@ namespace Oxide.Plugins
 
             _Debug("OnPlayerConnected End");
 
-            timer.Every(60f, () =>
+            /*timer.Every(60f, () =>
             {
-                GetPlayerPerformance(player, HandlePerformanceReport);
-            });
+                
+            });*/
         }
 
         private void HandlePerformanceReport(ClientPerformanceReport clientPerformanceReport)
         {
+            _Debug("------------------------------");
+            _Debug("Method: OnPlayerConnected");
             _Debug($"Player: {clientPerformanceReport.user_id} | Framerate: {clientPerformanceReport.fps} | Ping: {clientPerformanceReport.ping}");
+
+            Dictionary<string, string> data = new Dictionary<string, string>();
+
+            data["api_key"] = Configuration.General.APIToken;
+            data["steam_id"] = clientPerformanceReport.user_id;
+            data["frame_rate"] = clientPerformanceReport.fps.ToString();
+            data["ping"] = clientPerformanceReport.ping.ToString();
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.PlayersDataRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
         private void OnPlayerDisconnected(BasePlayer player)
@@ -349,15 +373,15 @@ namespace Oxide.Plugins
                 data["afk_seconds"] = GetPlayerAFKTime(player);
             }
 
-            coroutine = WebhookSend(data, Configuration.API.PlayersConnectionRoute.Create);
-            ServerMgr.Instance.StartCoroutine(coroutine);
+            webhookCoroutine = WebhookSend(data, Configuration.API.PlayersConnectionRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
         public void CreateServerData()
         {
             var data = getServerData();
-            coroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Create);
-            ServerMgr.Instance.StartCoroutine(coroutine);
+            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
         #endregion
@@ -368,7 +392,6 @@ namespace Oxide.Plugins
 
         #endregion
         
-
         #region ConsoleHelpers
 
         public void ConsoleLog(object message)
@@ -418,8 +441,8 @@ namespace Oxide.Plugins
             _Debug("Method: TestConsoleCommand");
 
             var data = getServerData();
-            coroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Create);
-            ServerMgr.Instance.StartCoroutine(coroutine);
+            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
             ConsoleLog("Sent");
         }
 
@@ -449,8 +472,8 @@ namespace Oxide.Plugins
                 data["afk_seconds"] = "12";
             }
 
-            coroutine = WebhookSend(data, Configuration.API.PlayersConnectionRoute.Create);
-            ServerMgr.Instance.StartCoroutine(coroutine);
+            webhookCoroutine = WebhookSend(data, Configuration.API.PlayersConnectionRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
             ConsoleLog("Sent");
         }
 
@@ -751,7 +774,23 @@ namespace Oxide.Plugins
 
         #endregion
 
-        #region DiscordMessages
+        #region Coroutines
+
+        private IEnumerator getPlayerClientDataCoroutine()
+        {
+            _Debug("------------------------------");
+            _Debug("Method: getPlayerClientDataCoroutine");
+
+            _Debug("Looping through all players");
+            foreach (var player in BasePlayer.activePlayerList)
+            {
+                _Debug($"Player Name: {player.displayName}");
+
+                GetPlayerPerformance(player, HandlePerformanceReport);
+
+                yield return null;
+            }
+        }
 
         private IEnumerator DiscordSendMessage(string msg)
         {
@@ -782,12 +821,9 @@ namespace Oxide.Plugins
                     ConsoleError("Discord Webhook Enabled, but the webhook isn't set correctly. Please check your Discord Webhook in the configuration file.");
                 }
 
-                ServerMgr.Instance.StopCoroutine(coroutine);
+                ServerMgr.Instance.StopCoroutine(webhookCoroutine);
             }
         }
-        #endregion
-
-        #region WebhookSend
 
         private IEnumerator WebhookSend(Dictionary<string, string> data, string webhook)
         {
@@ -822,7 +858,7 @@ namespace Oxide.Plugins
                 }
             }
 
-            ServerMgr.Instance.StopCoroutine(coroutine);
+            ServerMgr.Instance.StopCoroutine(webhookCoroutine);
         }
 
         #endregion
