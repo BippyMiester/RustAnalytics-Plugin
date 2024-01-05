@@ -11,12 +11,13 @@ using Oxide.Core.Libraries.Covalence;
 using Oxide.Core.Plugins;
 using UnityEngine;
 using UnityEngine.Networking;
+using System.Net.Sockets;
 //Reference: 0Harmony
 #if CARBON
     using HarmonyLib;
     using HInstance = HarmonyLib.Harmony;
 #else
-    using Harmony;
+using Harmony;
     using HInstance = Harmony.HarmonyInstance;
 #endif
 
@@ -30,7 +31,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.11";
+        private const string _PluginVersion = "0.0.12";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _DownloadLink = "INSERT_LINK_HERE";
 
@@ -136,7 +137,7 @@ namespace Oxide.Plugins
             return seconds;
         }
 
-        private Dictionary<string, string> getServerData()
+        private Dictionary<string, string> GetServerData()
         {
             Dictionary<string, string> data = new Dictionary<string, string>();
 
@@ -182,6 +183,57 @@ namespace Oxide.Plugins
             return data;
         }
 
+        private Dictionary<string, string> GetPlayerConnectionData(BasePlayer player, string type)
+        {
+            Dictionary<string, string> data = new Dictionary<string, string>();
+
+            data["api_key"] = Configuration.General.APIToken;
+            data["username"] = player.displayName;
+            data["steam_id"] = player.UserIDString;
+            data["ip_address"] = GetPlayerIPAddress(player);
+            data["type"] = type;
+
+            // Playtime Tracker
+            if (!RustAnalyticsPlaytimeTracker)
+            {
+                ConsoleError($"RustMetricsPlaytimeTracker is not loaded, but you have tracking enabled. Download from here: {_DownloadLink}");
+                data["online_seconds"] = "1";
+                data["afk_seconds"] = "1";
+            }
+            else
+            {
+                data["online_seconds"] = GetPlayerOnlineTime(player);
+                data["afk_seconds"] = GetPlayerAFKTime(player);
+            }
+
+            return data;
+        }
+
+        private Dictionary<string, string> GetPlayerClientData(ClientPerformanceReport clientPerformanceReport)
+        {
+            Dictionary<string, string> data = new Dictionary<string, string>();
+
+            data["api_key"] = Configuration.General.APIToken;
+            data["steam_id"] = clientPerformanceReport.user_id;
+            data["frame_rate"] = clientPerformanceReport.fps.ToString();
+            data["ping"] = clientPerformanceReport.ping.ToString();
+
+            return data;
+        }
+
+        private Dictionary<string, string> GetPlayerBannedData(string name, string id, string address, string reason)
+        {
+            Dictionary<string, string> data = new Dictionary<string, string>();
+
+            data["api_key"] = Configuration.General.APIToken;
+            data["username"] = name;
+            data["steam_id"] = id;
+            data["ip_address"] = address;
+            data["reason"] = reason;
+
+            return data;
+        }
+
         public void StartGlobalTimers()
         {
             // Call some functions before starting the timers so that they are immediately being collected.
@@ -193,6 +245,7 @@ namespace Oxide.Plugins
                 _Debug("Global Repeating Timer");
                 CreateServerData();
             });
+
             ConsoleLog("Starting 60 second timer...");
             timer.Every(60f, () =>
             {
@@ -208,18 +261,22 @@ namespace Oxide.Plugins
 
         private void PatchHarmony()
         {
+            _Debug("Patching Harmony");
             #if CARBON
                 _harmonyInstance = new HInstance(HarmonyId);
             #else
                 _harmonyInstance = HInstance.Create(HarmonyId);
             #endif
             _harmonyInstance.PatchAll();
+            _Debug("Patching Complete");
         }
 
         private void UnpatchHarmony()
         {
+            _Debug("Unpatching Harmony");
             _harmonyInstance.UnpatchAll(HarmonyId);
             _harmonyInstance = null;
+            _Debug("Harmony patches are now back to normal");
         }
 
         #endregion
@@ -298,28 +355,6 @@ namespace Oxide.Plugins
             CreatePlayerConnectionData(player, "connect");
 
             _Debug("OnPlayerConnected End");
-
-            /*timer.Every(60f, () =>
-            {
-                
-            });*/
-        }
-
-        private void HandlePerformanceReport(ClientPerformanceReport clientPerformanceReport)
-        {
-            _Debug("------------------------------");
-            _Debug("Method: OnPlayerConnected");
-            _Debug($"Player: {clientPerformanceReport.user_id} | Framerate: {clientPerformanceReport.fps} | Ping: {clientPerformanceReport.ping}");
-
-            Dictionary<string, string> data = new Dictionary<string, string>();
-
-            data["api_key"] = Configuration.General.APIToken;
-            data["steam_id"] = clientPerformanceReport.user_id;
-            data["frame_rate"] = clientPerformanceReport.fps.ToString();
-            data["ping"] = clientPerformanceReport.ping.ToString();
-
-            webhookCoroutine = WebhookSend(data, Configuration.API.PlayersDataRoute.Create);
-            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
         private void OnPlayerDisconnected(BasePlayer player)
@@ -346,32 +381,27 @@ namespace Oxide.Plugins
             ConsoleLog("New map data detected!");
         }
 
+        private void OnUserBanned(string name, string id, string address, string reason)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnUserBanned");
+            _Debug($"Name: {name}");
+            _Debug($"ID: {id}");
+            _Debug($"Address: {address}");
+            _Debug($"Reason: {reason}");
+
+            CreatePlayerBannedData(name, id, address, reason);
+        }
+
+        
+
         #endregion
 
         #region Database Methods
 
         public void CreatePlayerConnectionData(BasePlayer player, string type)
         {
-            Dictionary<string, string> data = new Dictionary<string, string>();
-
-            data["api_key"] = Configuration.General.APIToken;
-            data["username"] = player.displayName;
-            data["steam_id"] = player.UserIDString;
-            data["ip_address"] = GetPlayerIPAddress(player);
-            data["type"] = type;
-
-            // Playtime Tracker
-            if (!RustAnalyticsPlaytimeTracker)
-            {
-                ConsoleError($"RustMetricsPlaytimeTracker is not loaded, but you have tracking enabled. Download from here: {_DownloadLink}");
-                data["online_seconds"] = "1";
-                data["afk_seconds"] = "1";
-            }
-            else
-            {
-                data["online_seconds"] = GetPlayerOnlineTime(player);
-                data["afk_seconds"] = GetPlayerAFKTime(player);
-            }
+            var data = GetPlayerConnectionData(player, type);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.PlayersConnectionRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -379,8 +409,29 @@ namespace Oxide.Plugins
 
         public void CreateServerData()
         {
-            var data = getServerData();
+            var data = GetServerData();
+
             webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreatePlayerData(ClientPerformanceReport clientPerformanceReport)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnPlayerConnected");
+            _Debug($"Player: {clientPerformanceReport.user_id} | Framerate: {clientPerformanceReport.fps} | Ping: {clientPerformanceReport.ping}");
+
+            var data = GetPlayerClientData(clientPerformanceReport);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.PlayersDataRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreatePlayerBannedData(string name, string id, string address, string reason)
+        {
+            var data = GetPlayerBannedData(name, id, address, reason);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.PlayerBanDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -391,7 +442,7 @@ namespace Oxide.Plugins
 
 
         #endregion
-        
+
         #region ConsoleHelpers
 
         public void ConsoleLog(object message)
@@ -404,7 +455,12 @@ namespace Oxide.Plugins
             if (Convert.ToBoolean(Configuration.General.LogToFile))
                 LogToFile(_PluginName, $"ERROR: {message}", this);
 
+            Debug.LogError($"***********************************************");
+            Debug.LogError($"************* RUSTANALYTICS ERROR *************");
+            Debug.LogError($"***********************************************");
             Debug.LogError($"[{_PluginName}] ERROR: " + message);
+            Debug.LogError($"***********************************************");
+
         }
 
         public void ConsoleWarn(string message)
@@ -440,7 +496,7 @@ namespace Oxide.Plugins
             _Debug("------------------------------");
             _Debug("Method: TestConsoleCommand");
 
-            var data = getServerData();
+            var data = GetServerData();
             webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
             ConsoleLog("Sent");
@@ -538,6 +594,15 @@ namespace Oxide.Plugins
 
             public class APIOptions
             {
+                [JsonProperty(PropertyName = "PlayerBanData")]
+                public PlayerBanDataRoutes PlayerBanDataRoute { get; set; }
+
+                public class PlayerBanDataRoutes
+                {
+                    [JsonProperty(PropertyName = "Create")]
+                    public string Create { get; set; }
+                }
+
                 [JsonProperty(PropertyName = "ServerData")]
                 public ServerDataRoutes ServerDataRoute { get; set; }
 
@@ -682,7 +747,7 @@ namespace Oxide.Plugins
                     LogToFile = true,
                     DiscordWebhookEnabled = true,
                     DiscordWebhook = "https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks",
-                    APIToken = "SERVER_API_TOKEN"
+                    APIToken = "7e0c91ce-c7c1-3304-8d40-9eab41cf29f6"
                 },
                 Tracking = new ConfigData.TrackingOptions
                 {
@@ -690,6 +755,10 @@ namespace Oxide.Plugins
                 },
                 API = new ConfigData.APIOptions
                 {
+                    PlayerBanDataRoute = new ConfigData.APIOptions.PlayerBanDataRoutes
+                    {
+                        Create = "http://localhost:8000/api/v1/server/players/bans/create"
+                    },
                     ServerDataRoute = new ConfigData.APIOptions.ServerDataRoutes
                     {
                         Create = "http://localhost:8000/api/v1/server/data/create"
@@ -786,7 +855,7 @@ namespace Oxide.Plugins
             {
                 _Debug($"Player Name: {player.displayName}");
 
-                GetPlayerPerformance(player, HandlePerformanceReport);
+                GetPlayerPerformance(player, CreatePlayerData);
 
                 yield return null;
             }
