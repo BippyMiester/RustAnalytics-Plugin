@@ -31,7 +31,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.12";
+        private const string _PluginVersion = "0.0.13";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _DownloadLink = "INSERT_LINK_HERE";
 
@@ -78,6 +78,7 @@ namespace Oxide.Plugins
 
         private void OnServerInitialized()
         {
+            ShowSplashScreen();
             _pluginInstance = this;
             PatchHarmony();
             StartGlobalTimers();
@@ -230,6 +231,16 @@ namespace Oxide.Plugins
             data["steam_id"] = id;
             data["ip_address"] = address;
             data["reason"] = reason;
+
+            return data;
+        }
+
+        private Dictionary<string, string> GetPlayerUnbannedData(string id)
+        {
+            Dictionary<string, string> data = new Dictionary<string, string>();
+
+            data["api_key"] = Configuration.General.APIToken;
+            data["steam_id"] = id;
 
             return data;
         }
@@ -393,7 +404,14 @@ namespace Oxide.Plugins
             CreatePlayerBannedData(name, id, address, reason);
         }
 
-        
+        private void OnUserUnbanned(string name, string id)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnUserUnbanned");
+            _Debug($"ID: {id}");
+
+            DestroyPlayerBannedData(id);
+        }
 
         #endregion
 
@@ -432,6 +450,14 @@ namespace Oxide.Plugins
             var data = GetPlayerBannedData(name, id, address, reason);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.PlayerBanDataRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void DestroyPlayerBannedData(string id)
+        {
+            var data = GetPlayerUnbannedData(id);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.PlayerBanDataRoute.Destroy);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -601,6 +627,9 @@ namespace Oxide.Plugins
                 {
                     [JsonProperty(PropertyName = "Create")]
                     public string Create { get; set; }
+
+                    [JsonProperty(PropertyName = "Destroy")]
+                    public string Destroy { get; set; }
                 }
 
                 [JsonProperty(PropertyName = "ServerData")]
@@ -757,7 +786,8 @@ namespace Oxide.Plugins
                 {
                     PlayerBanDataRoute = new ConfigData.APIOptions.PlayerBanDataRoutes
                     {
-                        Create = "http://localhost:8000/api/v1/server/players/bans/create"
+                        Create = "http://localhost:8000/api/v1/server/players/bans/create",
+                        Destroy = "http://localhost:8000/api/v1/server/players/bans/destroy"
                     },
                     ServerDataRoute = new ConfigData.APIOptions.ServerDataRoutes
                     {
@@ -928,6 +958,21 @@ namespace Oxide.Plugins
             }
 
             ServerMgr.Instance.StopCoroutine(webhookCoroutine);
+        }
+
+        #endregion
+
+        #region SplashScreen
+
+        private void ShowSplashScreen()
+        {
+            ConsoleLog("+-+-+-+-+-+-+-+-+-+-+-+-+-+");
+            ConsoleLog("|R|u|s|t|A|n|a|l|y|t|i|c|s|");
+            ConsoleLog("+-+-+-+-+-+-+-+-+-+-+-+-+-+");
+            ConsoleLog("   |C|r|e|a|t|e|d| |B|y|   ");
+            ConsoleLog(" +-+-+-+-+-+-+-+-+-+-+-+-+ ");
+            ConsoleLog(" |B|i|p|p|y|M|i|e|s|t|e|r| ");
+            ConsoleLog(" +-+-+-+-+-+-+-+-+-+-+-+-+ ");
         }
 
         #endregion
