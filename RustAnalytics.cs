@@ -137,12 +137,6 @@ namespace Oxide.Plugins
         {
             ConsoleLog($"{_PluginName} has been initialized...");
             LoadMessages();
-            RegisterAllPermissions();
-        }
-
-        private void RegisterAllPermissions()
-        {
-            // permission.RegisterPermission(permCanSeeCSFVote, this);
         }
 
         private void OnServerInitialized()
