@@ -67,6 +67,55 @@ namespace Oxide.Plugins
             {"ROCKET_HEATSEEKER", "Homing Missile"}
         };
 
+        private Hash<string, string> containerTypes = new Hash<string, string>
+        {
+            {"dropbox.deployed", "Dropbox"},
+            {"bbq.deployed", "Barbeque"},
+            {"composter", "Composter"},
+            {"bathtub.planter.deployed", "Bathtub Planter Box"},
+            {"furnace", "Furnace"},
+            {"hitchtrough.deployed", "Hitch & Trough"},
+            {"planter.large.deployed", "Large Planter"},
+            {"planter.small.deployed", "Small Planter"},
+            {"legacy_furnace", "Legacy Furnace"},
+            {"box.wooden.large", "Large Wooden Box"},
+            {"woodbox_deployed", "Wooden Box"},
+            {"locker.deployed", "Locker"},
+            {"mailbox.deployed", "Mailbox"},
+            {"mixingtable.deployed", "Mixing Table"},
+            {"furnace.large", "Large Furnace"},
+            {"hobobarrel.deployed", "Hobo Barrel"},
+            {"railroadplanter.deployed", "Railroad Planter"},
+            {"repairbench_deployed", "Repair Bench"},
+            {"researchtable_deployed", "Research Table"},
+            {"tunalight.deployed", "Tuna Can Light"},
+            {"stocking_large_deployed", "SUPER Stocking"},
+            {"stocking_small_deployed", "Small Stocking"},
+            {"weaponrack_tall.deployed", "Weapon Rank (Tall)"},
+            {"weaponrack_horizontal.deployed", "Weapon Rank (Horizontal)"},
+            {"weaponrack_stand.deployed", "Weapon Rank (Stand)"},
+            {"weaponrack_wide.deployed", "Weapon Rank (Wide)"},
+            {"refinery_small_deployed", "Small Oil Refinery"},
+            {"torchholder.deployed", "Torch Holder"},
+            {"vendingmachine.deployed", "Vending Machine"},
+            {"fridge.deployed", "Fridge"},
+            {"campfire", "Campfire"},
+            {"skull_fire_pit", "Skull Fire Pit"},
+            {"workbench1.deployed", "Workbench (Level 1)"},
+            {"workbench2.deployed", "Workbench (Level 2)"},
+            {"workbench3.deployed", "Workbench (Level 3)"},
+            {"small_stash_deployed", "Small Stash"},
+            {"fireplace.deployed", "Fireplace"},
+            {"storage_barrel_c", "Storage Barrel (Horizontal)"},
+            {"storage_barrel_b", "Storage Barrel (Vertical)"},
+            {"cupboard.tool.deployed", "Tool Cupboard"},
+            {"electricfurnace.deployed", "Electric Furnace"},
+            {"cursedcauldron.deployed", "Cursed Cauldron"},
+            {"coffinstorage", "Coffin"},
+            {"guntrap.deployed", "Shotgun Trap"},
+            {"flameturret.deployed", "Flame Turret"}
+        };
+
         private void Init()
         {
             ConsoleLog($"{_PluginName} has been initialized...");
@@ -166,6 +215,35 @@ namespace Oxide.Plugins
                 return "1";
             }
             return seconds;
+        }
+
+        private string GetGridFromPosition(Vector3 position)
+        {
+            Vector2 roundedPos = new Vector2(World.Size / 2 + position.x, World.Size / 2 - position.z);
+
+            string grid = $"{ConvertXCoordinateToLetter((int)(roundedPos.x / 150))}{(int)(roundedPos.y / 150)}";
+
+            return grid;
+        }
+
+        private static string ConvertXCoordinateToLetter(int num)
+        {
+            int num2 = Mathf.FloorToInt((float)(num / 26));
+            int num3 = num % 26;
+            string text = string.Empty;
+            if (num2 > 0)
+            {
+                for (int i = 0; i < num2; i++)
+                {
+                    text += Convert.ToChar(65 + i);
+                }
+            }
+            return text + Convert.ToChar(65 + num3);
+        }
+
+        public static BasePlayer FindAwakeOrSleeping(string strNameOrIDOrIP)
+        {
+            return BasePlayer.Find(strNameOrIDOrIP, BasePlayer.allPlayerList);
         }
 
         #endregion
@@ -292,6 +370,21 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
+        private Hash<string, string> GetDestroyedContainersData(BasePlayer player, string owner, string type, string weapon, string grid, string x, string y)
+        {
+            ClearCachedData();
+            _cachedData["username"] = player.displayName;
+            _cachedData["steam_id"] = player.UserIDString;
+            _cachedData["owner"] = owner;
+            _cachedData["type"] = type;
+            _cachedData["weapon"] = weapon;
+            _cachedData["grid"] = grid;
+            _cachedData["x"] = x;
+            _cachedData["y"] = y;
+
+            return _cachedData;
+        }
+
         #endregion
 
         #region Harmony Helpers
@@ -384,87 +477,59 @@ namespace Oxide.Plugins
         #region Hooks
 
         #region PlayerConnections
-            private void OnPlayerConnected(BasePlayer player)
-            {
-                _Debug("------------------------------");
-                _Debug("Method: OnPlayerConnected");
-                _Debug($"Player: {player.displayName}/{player.UserIDString}");
-
-                CreatePlayerConnectionData(player, "connect");
-
-                _Debug("OnPlayerConnected End");
-            }
-
-            private void OnPlayerDisconnected(BasePlayer player)
+        private void OnPlayerConnected(BasePlayer player)
         {
             _Debug("------------------------------");
-            _Debug("Method: OnPlayerDisconnected");
+            _Debug("Method: OnPlayerConnected");
             _Debug($"Player: {player.displayName}/{player.UserIDString}");
 
-            CreatePlayerConnectionData(player, "quit");
+            CreatePlayerConnectionData(player, "connect");
 
-            _Debug("OnPlayerDisconnected End");
+            _Debug("OnPlayerConnected End");
         }
+
+        private void OnPlayerDisconnected(BasePlayer player)
+    {
+        _Debug("------------------------------");
+        _Debug("Method: OnPlayerDisconnected");
+        _Debug($"Player: {player.displayName}/{player.UserIDString}");
+
+        CreatePlayerConnectionData(player, "quit");
+
+        _Debug("OnPlayerDisconnected End");
+    }
 
         #endregion
 
         #region PlayerBans
-            private void OnUserBanned(string name, string id, string address, string reason)
-            {
-                _Debug("------------------------------");
-                _Debug("Method: OnUserBanned");
-                _Debug($"Name: {name}");
-                _Debug($"ID: {id}");
-                _Debug($"Address: {address}");
-                _Debug($"Reason: {reason}");
-
-                CreatePlayerBannedData(name, id, address, reason);
-            }
-
-            private void OnUserUnbanned(string name, string id)
+        private void OnUserBanned(string name, string id, string address, string reason)
         {
             _Debug("------------------------------");
-            _Debug("Method: OnUserUnbanned");
+            _Debug("Method: OnUserBanned");
+            _Debug($"Name: {name}");
             _Debug($"ID: {id}");
+            _Debug($"Address: {address}");
+            _Debug($"Reason: {reason}");
 
-            DestroyPlayerBannedData(id);
+            CreatePlayerBannedData(name, id, address, reason);
         }
+
+        private void OnUserUnbanned(string name, string id)
+    {
+        _Debug("------------------------------");
+        _Debug("Method: OnUserUnbanned");
+        _Debug($"ID: {id}");
+
+        DestroyPlayerBannedData(id);
+    }
 
         #endregion
 
         #region OnPlayerGather
-            private void OnDispenserBonus(ResourceDispenser dispenser, BasePlayer player, Item item)
-            {
-                _Debug("------------------------------");
-                _Debug("Method: OnDispenserBonus");
-
-                var itemName = item.info.displayName.english;
-                var amount = item.amount.ToString();
-
-                _Debug($"Resource: {itemName}");
-                _Debug($"Amount: {amount}");
-
-                CreatePlayerGatherData(itemName, amount, player);
-            }
-
-            private void OnDispenserGather(ResourceDispenser dispenser, BasePlayer player, Item item)
-            {
-                _Debug("------------------------------");
-                _Debug("Method: OnDispenserGather");
-
-                var itemName = item.info.displayName.english;
-                var amount = item.amount.ToString();
-
-                _Debug($"Resource: {itemName}");
-                _Debug($"Amount: {amount}");
-
-                CreatePlayerGatherData(itemName, amount, player);
-            }
-
-            private void OnCollectiblePickup(Item item, BasePlayer player)
+        private void OnDispenserBonus(ResourceDispenser dispenser, BasePlayer player, Item item)
         {
             _Debug("------------------------------");
-            _Debug("Method: OnCollectiblePickup");
+            _Debug("Method: OnDispenserBonus");
 
             var itemName = item.info.displayName.english;
             var amount = item.amount.ToString();
@@ -475,68 +540,97 @@ namespace Oxide.Plugins
             CreatePlayerGatherData(itemName, amount, player);
         }
 
+        private void OnDispenserGather(ResourceDispenser dispenser, BasePlayer player, Item item)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnDispenserGather");
+
+            var itemName = item.info.displayName.english;
+            var amount = item.amount.ToString();
+
+            _Debug($"Resource: {itemName}");
+            _Debug($"Amount: {amount}");
+
+            CreatePlayerGatherData(itemName, amount, player);
+        }
+
+        private void OnCollectiblePickup(Item item, BasePlayer player)
+    {
+        _Debug("------------------------------");
+        _Debug("Method: OnCollectiblePickup");
+
+        var itemName = item.info.displayName.english;
+        var amount = item.amount.ToString();
+
+        _Debug($"Resource: {itemName}");
+        _Debug($"Amount: {amount}");
+
+        CreatePlayerGatherData(itemName, amount, player);
+    }
+
         #endregion
 
+        /*
         #region WeaponFire
-            private void OnWeaponFired(BaseProjectile projectile, BasePlayer player, ItemModProjectile itemProjectile, object projectiles)
+        private void OnWeaponFired(BaseProjectile projectile, BasePlayer player, ItemModProjectile itemProjectile, object projectiles)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnWeaponFired");
+
+            // Define Some Variables
+            string bullet = "Not Found";
+            string weapon = "Not Found";
+
+            // Define the weapon
+            if (player.GetActiveItem() != null)
             {
-                _Debug("------------------------------");
-                _Debug("Method: OnWeaponFired");
-
-                // Define Some Variables
-                string bullet = "Not Found";
-                string weapon = "Not Found";
-
-                // Define the weapon
-                if (player.GetActiveItem() != null)
-                {
-                    weapon = player.GetActiveItem().info.displayName.english;
-                }
-
-                // Try and get the bullet information
-                try
-                {
-                    bullet = projectile.primaryMagazine.ammoType.displayName.english;
-                }
-                catch (Exception e)
-                {
-                    ConsoleWarn("Can Not Get Bullet Information: " + e.StackTrace);
-                    if (projectile == null)
-                    {
-                        ConsoleWarn("Projectile is null");
-                    }
-                    else if (projectile.primaryMagazine == null)
-                    {
-                        ConsoleWarn("Projectile Primary Magazine is null");
-                    }
-                    else if (projectile.primaryMagazine.ammoType == null)
-                    {
-                        ConsoleWarn("Projectile Primary Magazine Ammo Type is null");
-                    }
-                    return;
-                }
-
-                _Debug($"Player: {player.displayName}");
-                _Debug($"Steam ID: {player.UserIDString}");
-                _Debug($"Weapon: {weapon}");
-                _Debug($"Bullet: {bullet}");
-
-                CreateWeaponFireData(player, weapon, bullet);
+                weapon = player.GetActiveItem().info.displayName.english;
             }
 
-            private void OnExplosiveThrown(BasePlayer player, BaseEntity entity)
+            // Try and get the bullet information
+            try
             {
-                _Debug("------------------------------");
-                _Debug("Method: OnExplosiveThrown");
-                _Debug($"Player: {player.displayName}");
-                _Debug($"Steam ID: {player.UserIDString}");
-
-                string explosive = player.GetActiveItem().info.displayName.english;
-                _Debug($"Explosive: {explosive}");
-                CreateWeaponFireData(player, explosive, explosive);
+                bullet = projectile.primaryMagazine.ammoType.displayName.english;
+            }
+            catch (Exception e)
+            {
+                ConsoleWarn("Can Not Get Bullet Information: " + e.StackTrace);
+                if (projectile == null)
+                {
+                    ConsoleWarn("Projectile is null");
+                }
+                else if (projectile.primaryMagazine == null)
+                {
+                    ConsoleWarn("Projectile Primary Magazine is null");
+                }
+                else if (projectile.primaryMagazine.ammoType == null)
+                {
+                    ConsoleWarn("Projectile Primary Magazine Ammo Type is null");
+                }
+                return;
             }
 
-            private void OnRocketLaunched(BasePlayer player, BaseEntity entity)
+            _Debug($"Player: {player.displayName}");
+            _Debug($"Steam ID: {player.UserIDString}");
+            _Debug($"Weapon: {weapon}");
+            _Debug($"Bullet: {bullet}");
+
+            CreateWeaponFireData(player, weapon, bullet);
+        }
+
+        private void OnExplosiveThrown(BasePlayer player, BaseEntity entity)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnExplosiveThrown");
+            _Debug($"Player: {player.displayName}");
+            _Debug($"Steam ID: {player.UserIDString}");
+
+            string explosive = player.GetActiveItem().info.displayName.english;
+            _Debug($"Explosive: {explosive}");
+            CreateWeaponFireData(player, explosive, explosive);
+        }
+
+        private void OnRocketLaunched(BasePlayer player, BaseEntity entity)
         {
             _Debug("------------------------------");
             _Debug("Method: OnRocketLaunched");
@@ -554,8 +648,62 @@ namespace Oxide.Plugins
         }
 
         #endregion
+        */
 
+        #region OnEntityDeath (DestroyedContainer, DestroyedBuilding, AnimalKill, PlayerKills)
 
+        private void OnEntityDeath(BaseCombatEntity entity, HitInfo hitInfo)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnEntityDeath");
+            string weapon = "Weapon Not Found";
+
+            // Check if the last attacker was a BasePlayer
+            if(entity.lastAttacker is BasePlayer && entity.lastAttacker != null)
+            {
+                BasePlayer player = (BasePlayer)entity.lastAttacker;
+                _Debug($"Attacking Player: {player.displayName}");
+                _Debug($"Attacking Player ID: {player.UserIDString}");
+                // Check if the entity is a Storage Container (DestroyedContainer)
+                if (entity is StorageContainer)
+                {
+                    // Get the storage container
+                    StorageContainer container = (StorageContainer)entity;
+                    string containerName = containerTypes.ContainsKey(container.ShortPrefabName) ? containerTypes[container.ShortPrefabName] : container.ShortPrefabName;
+                    _Debug($"Container (Short Prefab Name): {container.ShortPrefabName}");
+                    _Debug($"Container (Proper Name): {containerName}");
+
+                    // Get the player weapon
+                    try
+                    {
+                        weapon = player.GetActiveItem().info.displayName.english;
+                        _Debug($"Weapon: {weapon}");
+                    }
+                    catch
+                    {
+                        ConsoleWarn("Can Not Get Player Weapon");
+                    }
+
+                    // Get the container coordinates and grid
+                    string x = container.transform.position.x.ToString();
+                    string y = container.transform.position.y.ToString();
+                    string grid = GetGridFromPosition(container.transform.position);
+
+                    _Debug($"X Coordinate: {x}");
+                    _Debug($"Y Coordinate: {y}");
+                    _Debug($"Grid: {grid}");
+
+                    // Get the container Owner
+                    string containerOwner = FindAwakeOrSleeping(entity.OwnerID.ToString()).displayName;
+                    _Debug($"Container Owner: {containerOwner}");
+
+                    // Create the Destroyed Container Data
+                    CreateDestroyedContainerData(player, containerOwner, containerName, weapon, grid, x, y);
+                }
+            }
+        }
+
+        #endregion
 
         #endregion Hooks
 
@@ -618,6 +766,14 @@ namespace Oxide.Plugins
             var data = GetWeaponFireData(player, bullet, weapon);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.WeaponFireRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreateDestroyedContainerData(BasePlayer player, string owner, string type, string weapon, string grid, string x, string y)
+        {
+            var data = GetDestroyedContainersData(player, owner, type, weapon, grid, x, y);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.DestroyedContainersRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
