@@ -451,6 +451,20 @@ namespace Oxide.Plugins
             CreatePlayerGatherData(itemName, amount, player);
         }
 
+        private void OnCollectiblePickup(Item item, BasePlayer player)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnCollectiblePickup");
+
+            var itemName = item.info.displayName.english;
+            var amount = item.amount.ToString();
+
+            _Debug($"Resource: {itemName}");
+            _Debug($"Amount: {amount}");
+
+            CreatePlayerGatherData(itemName, amount, player);
+        }
+
         #endregion
 
         #region Database Methods
