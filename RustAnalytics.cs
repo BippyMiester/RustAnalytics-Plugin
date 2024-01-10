@@ -358,6 +358,7 @@ namespace Oxide.Plugins
 
         #region Hooks
 
+        #region PlayerConnections
         private void OnPlayerConnected(BasePlayer player)
         {
             _Debug("------------------------------");
@@ -380,19 +381,9 @@ namespace Oxide.Plugins
             _Debug("OnPlayerDisconnected End");
         }
 
-        void OnItemCraftFinished(ItemCraftTask task, Item item, ItemCrafter crafter)
-        {
+        #endregion
 
-            Puts("OnItemCraftFinished was called!");
-        }
-
-        private void OnNewSave(string filename)
-        {
-            _Debug("------------------------------");
-            _Debug("Method: OnNewSave");
-            ConsoleLog("New map data detected!");
-        }
-
+        #region PlayerBans
         private void OnUserBanned(string name, string id, string address, string reason)
         {
             _Debug("------------------------------");
@@ -414,6 +405,9 @@ namespace Oxide.Plugins
             DestroyPlayerBannedData(id);
         }
 
+        #endregion
+
+        #region OnPlayerGather
         private void OnDispenserBonus(ResourceDispenser dispenser, BasePlayer player, Item item)
         {
             _Debug("------------------------------");
