@@ -125,6 +125,12 @@ namespace Oxide.Plugins
 
         #region HelperFunctions
 
+        private void ClearCachedData()
+        {
+            _cachedData.Clear();
+            _cachedData["api_key"] = Configuration.General.APIToken;
+        }
+
         private void GetPlayerPerformance(BasePlayer player, Action<ClientPerformanceReport> callback)
         {
             _clientPerformanceReports[player.userID] = callback;
@@ -162,6 +168,10 @@ namespace Oxide.Plugins
             return seconds;
         }
 
+        #endregion
+
+        #region CachedDataHandling
+
         private Hash<string, string> GetServerData()
         {
             uint worldSize = World.Size / 1000;
@@ -170,8 +180,7 @@ namespace Oxide.Plugins
             double networkIn = Math.Round((Network.Net.sv.GetStat(null, Network.BaseNetwork.StatTypeLong.BytesReceived_LastSecond) * 1f) / 1024, 2);
             double networkOut = Math.Round((Network.Net.sv.GetStat(null, Network.BaseNetwork.StatTypeLong.BytesSent_LastSecond) * 1f) / 1024, 2);
 
-            _cachedData.Clear();
-            _cachedData["api_key"] = Configuration.General.APIToken;
+            ClearCachedData();
             _cachedData["entities"] = $"{BaseNetworkable.serverEntities.Count}";
             _cachedData["world_seed"] = $"{World.Seed}";
             _cachedData["world_name"] = $"{World.Name}";
@@ -209,8 +218,7 @@ namespace Oxide.Plugins
 
         private Hash<string, string> GetPlayerConnectionData(BasePlayer player, string type)
         {
-            _cachedData.Clear();
-            _cachedData["api_key"] = Configuration.General.APIToken;
+            ClearCachedData();
             _cachedData["username"] = player.displayName;
             _cachedData["steam_id"] = player.UserIDString;
             _cachedData["ip_address"] = GetPlayerIPAddress(player);
@@ -234,9 +242,7 @@ namespace Oxide.Plugins
 
         private Hash<string, string> GetPlayerClientData(ClientPerformanceReport clientPerformanceReport)
         {
-            _cachedData.Clear();
-
-            _cachedData["api_key"] = Configuration.General.APIToken;
+            ClearCachedData();
             _cachedData["steam_id"] = clientPerformanceReport.user_id;
             _cachedData["frame_rate"] = clientPerformanceReport.fps.ToString();
             _cachedData["ping"] = clientPerformanceReport.ping.ToString();
@@ -246,9 +252,7 @@ namespace Oxide.Plugins
 
         private Hash<string, string> GetPlayerBannedData(string name, string id, string address, string reason)
         {
-            _cachedData.Clear();
-
-            _cachedData["api_key"] = Configuration.General.APIToken;
+            ClearCachedData();
             _cachedData["username"] = name;
             _cachedData["steam_id"] = id;
             _cachedData["ip_address"] = address;
@@ -259,9 +263,7 @@ namespace Oxide.Plugins
 
         private Hash<string, string> GetPlayerUnbannedData(string id)
         {
-            _cachedData.Clear();
-
-            _cachedData["api_key"] = Configuration.General.APIToken;
+            ClearCachedData();
             _cachedData["steam_id"] = id;
 
             return _cachedData;
@@ -269,8 +271,7 @@ namespace Oxide.Plugins
 
         private Hash<string, string> GetPlayerGatherData(string itemName, string amount, BasePlayer player)
         {
-            _cachedData.Clear();
-            _cachedData["api_key"] = Configuration.General.APIToken;
+            ClearCachedData();
             _cachedData["username"] = player.displayName;
             _cachedData["steam_id"] = player.UserIDString;
             _cachedData["resource"] = itemName;
@@ -281,8 +282,7 @@ namespace Oxide.Plugins
 
         private Hash<string, string> GetWeaponFireData(BasePlayer player, string bullet, string weapon)
         {
-            _cachedData.Clear();
-            _cachedData["api_key"] = Configuration.General.APIToken;
+            ClearCachedData();
             _cachedData["username"] = player.displayName;
             _cachedData["steam_id"] = player.UserIDString;
             _cachedData["bullet"] = bullet;
@@ -293,7 +293,7 @@ namespace Oxide.Plugins
         }
 
         #endregion
-        
+
         #region Harmony Helpers
 
         private void PatchHarmony()
@@ -384,18 +384,18 @@ namespace Oxide.Plugins
         #region Hooks
 
         #region PlayerConnections
-        private void OnPlayerConnected(BasePlayer player)
-        {
-            _Debug("------------------------------");
-            _Debug("Method: OnPlayerConnected");
-            _Debug($"Player: {player.displayName}/{player.UserIDString}");
+            private void OnPlayerConnected(BasePlayer player)
+            {
+                _Debug("------------------------------");
+                _Debug("Method: OnPlayerConnected");
+                _Debug($"Player: {player.displayName}/{player.UserIDString}");
 
-            CreatePlayerConnectionData(player, "connect");
+                CreatePlayerConnectionData(player, "connect");
 
-            _Debug("OnPlayerConnected End");
-        }
+                _Debug("OnPlayerConnected End");
+            }
 
-        private void OnPlayerDisconnected(BasePlayer player)
+            private void OnPlayerDisconnected(BasePlayer player)
         {
             _Debug("------------------------------");
             _Debug("Method: OnPlayerDisconnected");
@@ -409,19 +409,19 @@ namespace Oxide.Plugins
         #endregion
 
         #region PlayerBans
-        private void OnUserBanned(string name, string id, string address, string reason)
-        {
-            _Debug("------------------------------");
-            _Debug("Method: OnUserBanned");
-            _Debug($"Name: {name}");
-            _Debug($"ID: {id}");
-            _Debug($"Address: {address}");
-            _Debug($"Reason: {reason}");
+            private void OnUserBanned(string name, string id, string address, string reason)
+            {
+                _Debug("------------------------------");
+                _Debug("Method: OnUserBanned");
+                _Debug($"Name: {name}");
+                _Debug($"ID: {id}");
+                _Debug($"Address: {address}");
+                _Debug($"Reason: {reason}");
 
-            CreatePlayerBannedData(name, id, address, reason);
-        }
+                CreatePlayerBannedData(name, id, address, reason);
+            }
 
-        private void OnUserUnbanned(string name, string id)
+            private void OnUserUnbanned(string name, string id)
         {
             _Debug("------------------------------");
             _Debug("Method: OnUserUnbanned");
@@ -433,35 +433,35 @@ namespace Oxide.Plugins
         #endregion
 
         #region OnPlayerGather
-        private void OnDispenserBonus(ResourceDispenser dispenser, BasePlayer player, Item item)
-        {
-            _Debug("------------------------------");
-            _Debug("Method: OnDispenserBonus");
+            private void OnDispenserBonus(ResourceDispenser dispenser, BasePlayer player, Item item)
+            {
+                _Debug("------------------------------");
+                _Debug("Method: OnDispenserBonus");
 
-            var itemName = item.info.displayName.english;
-            var amount = item.amount.ToString();
+                var itemName = item.info.displayName.english;
+                var amount = item.amount.ToString();
 
-            _Debug($"Resource: {itemName}");
-            _Debug($"Amount: {amount}");
+                _Debug($"Resource: {itemName}");
+                _Debug($"Amount: {amount}");
 
-            CreatePlayerGatherData(itemName, amount, player);
-        }
+                CreatePlayerGatherData(itemName, amount, player);
+            }
 
-        private void OnDispenserGather(ResourceDispenser dispenser, BasePlayer player, Item item)
-        {
-            _Debug("------------------------------");
-            _Debug("Method: OnDispenserGather");
+            private void OnDispenserGather(ResourceDispenser dispenser, BasePlayer player, Item item)
+            {
+                _Debug("------------------------------");
+                _Debug("Method: OnDispenserGather");
 
-            var itemName = item.info.displayName.english;
-            var amount = item.amount.ToString();
+                var itemName = item.info.displayName.english;
+                var amount = item.amount.ToString();
 
-            _Debug($"Resource: {itemName}");
-            _Debug($"Amount: {amount}");
+                _Debug($"Resource: {itemName}");
+                _Debug($"Amount: {amount}");
 
-            CreatePlayerGatherData(itemName, amount, player);
-        }
+                CreatePlayerGatherData(itemName, amount, player);
+            }
 
-        private void OnCollectiblePickup(Item item, BasePlayer player)
+            private void OnCollectiblePickup(Item item, BasePlayer player)
         {
             _Debug("------------------------------");
             _Debug("Method: OnCollectiblePickup");
@@ -478,65 +478,65 @@ namespace Oxide.Plugins
         #endregion
 
         #region WeaponFire
-        private void OnWeaponFired(BaseProjectile projectile, BasePlayer player, ItemModProjectile itemProjectile, object projectiles)
-        {
-            _Debug("------------------------------");
-            _Debug("Method: OnWeaponFired");
-
-            // Define Some Variables
-            string bullet = "Not Found";
-            string weapon = "Not Found";
-
-            // Define the weapon
-            if (player.GetActiveItem() != null)
+            private void OnWeaponFired(BaseProjectile projectile, BasePlayer player, ItemModProjectile itemProjectile, object projectiles)
             {
-                weapon = player.GetActiveItem().info.displayName.english;
+                _Debug("------------------------------");
+                _Debug("Method: OnWeaponFired");
+
+                // Define Some Variables
+                string bullet = "Not Found";
+                string weapon = "Not Found";
+
+                // Define the weapon
+                if (player.GetActiveItem() != null)
+                {
+                    weapon = player.GetActiveItem().info.displayName.english;
+                }
+
+                // Try and get the bullet information
+                try
+                {
+                    bullet = projectile.primaryMagazine.ammoType.displayName.english;
+                }
+                catch (Exception e)
+                {
+                    ConsoleWarn("Can Not Get Bullet Information: " + e.StackTrace);
+                    if (projectile == null)
+                    {
+                        ConsoleWarn("Projectile is null");
+                    }
+                    else if (projectile.primaryMagazine == null)
+                    {
+                        ConsoleWarn("Projectile Primary Magazine is null");
+                    }
+                    else if (projectile.primaryMagazine.ammoType == null)
+                    {
+                        ConsoleWarn("Projectile Primary Magazine Ammo Type is null");
+                    }
+                    return;
+                }
+
+                _Debug($"Player: {player.displayName}");
+                _Debug($"Steam ID: {player.UserIDString}");
+                _Debug($"Weapon: {weapon}");
+                _Debug($"Bullet: {bullet}");
+
+                CreateWeaponFireData(player, weapon, bullet);
             }
 
-            // Try and get the bullet information
-            try
+            private void OnExplosiveThrown(BasePlayer player, BaseEntity entity)
             {
-                bullet = projectile.primaryMagazine.ammoType.displayName.english;
-            }
-            catch (Exception e)
-            {
-                ConsoleWarn("Can Not Get Bullet Information: " + e.StackTrace);
-                if (projectile == null)
-                {
-                    ConsoleWarn("Projectile is null");
-                }
-                else if (projectile.primaryMagazine == null)
-                {
-                    ConsoleWarn("Projectile Primary Magazine is null");
-                }
-                else if (projectile.primaryMagazine.ammoType == null)
-                {
-                    ConsoleWarn("Projectile Primary Magazine Ammo Type is null");
-                }
-                return;
+                _Debug("------------------------------");
+                _Debug("Method: OnExplosiveThrown");
+                _Debug($"Player: {player.displayName}");
+                _Debug($"Steam ID: {player.UserIDString}");
+
+                string explosive = player.GetActiveItem().info.displayName.english;
+                _Debug($"Explosive: {explosive}");
+                CreateWeaponFireData(player, explosive, explosive);
             }
 
-            _Debug($"Player: {player.displayName}");
-            _Debug($"Steam ID: {player.UserIDString}");
-            _Debug($"Weapon: {weapon}");
-            _Debug($"Bullet: {bullet}");
-
-            CreateWeaponFireData(player, weapon, bullet);
-        }
-
-        private void OnExplosiveThrown(BasePlayer player, BaseEntity entity)
-        {
-            _Debug("------------------------------");
-            _Debug("Method: OnExplosiveThrown");
-            _Debug($"Player: {player.displayName}");
-            _Debug($"Steam ID: {player.UserIDString}");
-
-            string explosive = player.GetActiveItem().info.displayName.english;
-            _Debug($"Explosive: {explosive}");
-            CreateWeaponFireData(player, explosive, explosive);
-        }
-
-        private void OnRocketLaunched(BasePlayer player, BaseEntity entity)
+            private void OnRocketLaunched(BasePlayer player, BaseEntity entity)
         {
             _Debug("------------------------------");
             _Debug("Method: OnRocketLaunched");
@@ -554,6 +554,8 @@ namespace Oxide.Plugins
         }
 
         #endregion
+
+
 
         #endregion Hooks
 
