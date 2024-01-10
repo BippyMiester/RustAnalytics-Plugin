@@ -437,6 +437,20 @@ namespace Oxide.Plugins
             CreatePlayerGatherData(itemName, amount, player);
         }
 
+        private void OnDispenserGather(ResourceDispenser dispenser, BasePlayer player, Item item)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnDispenserGather");
+
+            var itemName = item.info.displayName.english;
+            var amount = item.amount.ToString();
+
+            _Debug($"Resource: {itemName}");
+            _Debug($"Amount: {amount}");
+
+            CreatePlayerGatherData(itemName, amount, player);
+        }
+
         #endregion
 
         #region Database Methods
