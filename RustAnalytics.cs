@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.15";
+        private const string _PluginVersion = "0.0.17";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _DownloadLink = "INSERT_LINK_HERE";
 
@@ -422,6 +422,19 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
+        private Hash<string, string> GetPlayerDeathData(BasePlayer player, string reason, string x, string y, string grid)
+        {
+            ClearCachedData();
+            _cachedData["username"] = player.displayName;
+            _cachedData["steam_id"] = player.UserIDString;
+            _cachedData["cause"] = reason;
+            _cachedData["x"] = x;
+            _cachedData["y"] = y;
+            _cachedData["grid"] = grid;
+
+            return _cachedData;
+        }
+
         #endregion
 
         #region Harmony Helpers
@@ -709,7 +722,11 @@ namespace Oxide.Plugins
 
                 // Check if the entity is an animal (AnimalKill)
                 CheckIfEntityIsAnimal(player, entity, hitInfo, weapon);
+
             }
+
+            // Check if the entity is a BasePlayer (PlayerDeath)
+            CheckIfEntityIsBasePlayer(entity);
         }
 
         private void CheckIfEntityIsStorage(BasePlayer player, BaseCombatEntity entity, string weapon)
@@ -830,6 +847,28 @@ namespace Oxide.Plugins
             }
         }
 
+        private void CheckIfEntityIsBasePlayer(BaseCombatEntity entity)
+        {
+            if (entity is BasePlayer)
+            {
+                _Debug("Entity: BasePlayer");
+
+                // Check to see if the player is an npc
+                if (entity.IsNpc) return;
+
+                // Get the coordinates
+                string x = entity.transform.position.x.ToString();
+                string y = entity.transform.position.y.ToString();
+                string grid = GetGridFromPosition(entity.transform.position);
+
+                // Get the reason for the death
+                string reason = entity.lastDamage.ToString();
+
+                // Create the Animal Kill Data
+                CreatePlayerDeathData((BasePlayer)entity, reason, x, y, grid);
+            }
+        }
+
         #endregion
 
         #endregion Hooks
@@ -917,6 +956,14 @@ namespace Oxide.Plugins
             var data = GetAnimalKillData(player, animal, distance, weapon);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.AnimalKillsRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreatePlayerDeathData(BasePlayer player, string reason, string x, string y, string grid)
+        {
+            var data = GetPlayerDeathData(player, reason, x, y, grid);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.DeathsRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
