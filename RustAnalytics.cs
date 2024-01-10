@@ -99,8 +99,29 @@ namespace Oxide.Plugins
             _pluginInstance = null;
         }
 
+        public void StartGlobalTimers()
+        {
+            // Call some functions before starting the timers so that they are immediately being collected.
+            CreateServerData();
+
+            ConsoleLog("Starting 10 minute timer...");
+            timer.Every(600f, () =>
+            {
+                CreateServerData();
+            });
+
+            ConsoleLog("Starting 60 second timer...");
+            timer.Every(60f, () =>
+            {
+
+            });
+
+            // Start the getPlayerClientDataCoroutine
+            ServerMgr.Instance.StartCoroutine(clientDataCoroutine = GetPlayerClientDataCoroutine());
+        }
+
         #region HelperFunctions
-        
+
         private void GetPlayerPerformance(BasePlayer player, Action<ClientPerformanceReport> callback)
         {
             _clientPerformanceReports[player.userID] = callback;
@@ -243,25 +264,16 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        public void StartGlobalTimers()
+        private Hash<string, string> GetPlayerGatherData(string itemName, string amount, BasePlayer player)
         {
-            // Call some functions before starting the timers so that they are immediately being collected.
-            CreateServerData();
+            _cachedData.Clear();
+            _cachedData["api_key"] = Configuration.General.APIToken;
+            _cachedData["username"] = player.displayName;
+            _cachedData["steam_id"] = player.UserIDString;
+            _cachedData["resource"] = itemName;
+            _cachedData["amount"] = amount;
 
-            ConsoleLog("Starting 10 minute timer...");
-            timer.Every(600f, () =>
-            {
-                CreateServerData();
-            });
-
-            ConsoleLog("Starting 60 second timer...");
-            timer.Every(60f, () =>
-            {                
-                
-            });
-
-            // Start the getPlayerClientDataCoroutine
-            ServerMgr.Instance.StartCoroutine(clientDataCoroutine = GetPlayerClientDataCoroutine());
+            return _cachedData;
         }
 
         #endregion
@@ -411,6 +423,20 @@ namespace Oxide.Plugins
             DestroyPlayerBannedData(id);
         }
 
+        private void OnDispenserBonus(ResourceDispenser dispenser, BasePlayer player, Item item)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnDispenserBonus");
+
+            var itemName = item.info.displayName.english;
+            var amount = item.amount.ToString();
+
+            _Debug($"Resource: {itemName}");
+            _Debug($"Amount: {amount}");
+
+            CreatePlayerGatherData(itemName, amount, player);
+        }
+
         #endregion
 
         #region Database Methods
@@ -456,6 +482,14 @@ namespace Oxide.Plugins
             var data = GetPlayerUnbannedData(id);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.PlayerBanDataRoute.Destroy);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreatePlayerGatherData(string itemName, string amount, BasePlayer player)
+        {
+            var data = GetPlayerGatherData(itemName, amount, player);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.GatheringRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
