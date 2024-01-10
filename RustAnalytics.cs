@@ -31,16 +31,13 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.13";
+        private const string _PluginVersion = "0.0.14";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _DownloadLink = "INSERT_LINK_HERE";
 
         // Plugin References
         [PluginReference]
         Plugin RustAnalyticsPlaytimeTracker;
-
-        // Permision Constants
-        // public const string permCanSeeCSFVote = "easyvotepro.canseecsfvote";
 
         #region ChangeLog
         /*
@@ -55,6 +52,9 @@ namespace Oxide.Plugins
         private static RustAnalytics _pluginInstance;
         private SaveInfo _saveInfo = SaveInfo.Create(World.SaveFolderName + $"/player.blueprints.{Rust.Protocol.persistance}.db");
         private readonly Hash<ulong, Action<ClientPerformanceReport>> _clientPerformanceReports = new();
+        private readonly CustomYieldInstruction _waitWhileYieldInstruction = new WaitWhile(() => BasePlayer.activePlayerList.Count == 0);
+        private readonly YieldInstruction _waitYieldInstruction = new WaitForSeconds(60f);
+        private readonly Hash<string, string> _cachedData = new();
 
         // Coroutines
         private IEnumerator webhookCoroutine;
@@ -78,7 +78,7 @@ namespace Oxide.Plugins
 
         private void OnServerInitialized()
         {
-            ShowSplashScreen();
+            //ShowSplashScreen();
             _pluginInstance = this;
             PatchHarmony();
             StartGlobalTimers();
@@ -138,32 +138,31 @@ namespace Oxide.Plugins
             return seconds;
         }
 
-        private Dictionary<string, string> GetServerData()
+        private Hash<string, string> GetServerData()
         {
-            Dictionary<string, string> data = new Dictionary<string, string>();
+            uint worldSize = World.Size / 1000;
+            double usedMemory = Math.Round((Performance.current.memoryUsageSystem * 1f) / 1024, 2);
+            double maxMemory = Math.Round((UnityEngine.SystemInfo.systemMemorySize * 1f) / 1024, 2);
+            double networkIn = Math.Round((Network.Net.sv.GetStat(null, Network.BaseNetwork.StatTypeLong.BytesReceived_LastSecond) * 1f) / 1024, 2);
+            double networkOut = Math.Round((Network.Net.sv.GetStat(null, Network.BaseNetwork.StatTypeLong.BytesSent_LastSecond) * 1f) / 1024, 2);
 
-            var worldSize = World.Size / 1000;
-            var usedMemory = Math.Round((Performance.current.memoryUsageSystem * 1f) / 1024, 2);
-            var maxMemory = Math.Round((UnityEngine.SystemInfo.systemMemorySize * 1f) / 1024, 2);
-            var networkIn = Math.Round((Network.Net.sv.GetStat(null, Network.BaseNetwork.StatTypeLong.BytesReceived_LastSecond) * 1f) / 1024, 2);
-            var networkOut = Math.Round((Network.Net.sv.GetStat(null, Network.BaseNetwork.StatTypeLong.BytesSent_LastSecond) * 1f) / 1024, 2);
-
-            data["api_key"] = Configuration.General.APIToken;
-            data["entities"] = $"{BaseNetworkable.serverEntities.Count}";
-            data["world_seed"] = $"{World.Seed}";
-            data["world_name"] = $"{World.Name}";
-            data["players_online"] = $"{BasePlayer.activePlayerList.Count}";
-            data["players_max"] = $"{ConVar.Server.maxplayers}";
-            data["in_game_time"] = $"{TOD_Sky.Instance.Cycle.DateTime}";
-            data["server_fps"] = $"{Performance.report.frameRate}";
-            data["map_size"] = $"{worldSize}";
-            data["protocol"] = $"{Rust.Protocol.network}";
-            data["used_memory"] = $"{usedMemory}";
-            data["max_memory"] = $"{maxMemory}";
-            data["network_in"] = $"{networkIn}";
-            data["network_out"] = $"{networkOut}";
-            data["last_wiped"] = $"{SaveRestore.SaveCreatedTime}";
-            data["blueprint_last_wiped"] = $"{_saveInfo.CreationTime}";
+            _cachedData.Clear();
+            _cachedData["api_key"] = Configuration.General.APIToken;
+            _cachedData["entities"] = $"{BaseNetworkable.serverEntities.Count}";
+            _cachedData["world_seed"] = $"{World.Seed}";
+            _cachedData["world_name"] = $"{World.Name}";
+            _cachedData["players_online"] = $"{BasePlayer.activePlayerList.Count}";
+            _cachedData["players_max"] = $"{ConVar.Server.maxplayers}";
+            _cachedData["in_game_time"] = $"{TOD_Sky.Instance.Cycle.DateTime}";
+            _cachedData["server_fps"] = $"{Performance.report.frameRate}";
+            _cachedData["map_size"] = $"{worldSize}";
+            _cachedData["protocol"] = $"{Rust.Protocol.network}";
+            _cachedData["used_memory"] = $"{usedMemory}";
+            _cachedData["max_memory"] = $"{maxMemory}";
+            _cachedData["network_in"] = $"{networkIn}";
+            _cachedData["network_out"] = $"{networkOut}";
+            _cachedData["last_wiped"] = $"{SaveRestore.SaveCreatedTime}";
+            _cachedData["blueprint_last_wiped"] = $"{_saveInfo.CreationTime}";
 
             _Debug($"Server Entities: {BaseNetworkable.serverEntities.Count}");
             _Debug($"World Seed: {World.Seed}");
@@ -181,68 +180,67 @@ namespace Oxide.Plugins
             _Debug($"Last Wiped: {SaveRestore.SaveCreatedTime}");
             _Debug($"Blueprint Wipe: {_saveInfo.CreationTime.ToString()}");
 
-            return data;
+            return _cachedData;
         }
 
-        private Dictionary<string, string> GetPlayerConnectionData(BasePlayer player, string type)
+        private Hash<string, string> GetPlayerConnectionData(BasePlayer player, string type)
         {
-            Dictionary<string, string> data = new Dictionary<string, string>();
-
-            data["api_key"] = Configuration.General.APIToken;
-            data["username"] = player.displayName;
-            data["steam_id"] = player.UserIDString;
-            data["ip_address"] = GetPlayerIPAddress(player);
-            data["type"] = type;
+            _cachedData.Clear();
+            _cachedData["api_key"] = Configuration.General.APIToken;
+            _cachedData["username"] = player.displayName;
+            _cachedData["steam_id"] = player.UserIDString;
+            _cachedData["ip_address"] = GetPlayerIPAddress(player);
+            _cachedData["type"] = type;
 
             // Playtime Tracker
             if (!RustAnalyticsPlaytimeTracker)
             {
                 ConsoleError($"RustMetricsPlaytimeTracker is not loaded, but you have tracking enabled. Download from here: {_DownloadLink}");
-                data["online_seconds"] = "1";
-                data["afk_seconds"] = "1";
+                _cachedData["online_seconds"] = "1";
+                _cachedData["afk_seconds"] = "1";
             }
             else
             {
-                data["online_seconds"] = GetPlayerOnlineTime(player);
-                data["afk_seconds"] = GetPlayerAFKTime(player);
+                _cachedData["online_seconds"] = GetPlayerOnlineTime(player);
+                _cachedData["afk_seconds"] = GetPlayerAFKTime(player);
             }
 
-            return data;
+            return _cachedData;
         }
 
-        private Dictionary<string, string> GetPlayerClientData(ClientPerformanceReport clientPerformanceReport)
+        private Hash<string, string> GetPlayerClientData(ClientPerformanceReport clientPerformanceReport)
         {
-            Dictionary<string, string> data = new Dictionary<string, string>();
+            _cachedData.Clear();
 
-            data["api_key"] = Configuration.General.APIToken;
-            data["steam_id"] = clientPerformanceReport.user_id;
-            data["frame_rate"] = clientPerformanceReport.fps.ToString();
-            data["ping"] = clientPerformanceReport.ping.ToString();
+            _cachedData["api_key"] = Configuration.General.APIToken;
+            _cachedData["steam_id"] = clientPerformanceReport.user_id;
+            _cachedData["frame_rate"] = clientPerformanceReport.fps.ToString();
+            _cachedData["ping"] = clientPerformanceReport.ping.ToString();
 
-            return data;
+            return _cachedData;
         }
 
-        private Dictionary<string, string> GetPlayerBannedData(string name, string id, string address, string reason)
+        private Hash<string, string> GetPlayerBannedData(string name, string id, string address, string reason)
         {
-            Dictionary<string, string> data = new Dictionary<string, string>();
+            _cachedData.Clear();
 
-            data["api_key"] = Configuration.General.APIToken;
-            data["username"] = name;
-            data["steam_id"] = id;
-            data["ip_address"] = address;
-            data["reason"] = reason;
+            _cachedData["api_key"] = Configuration.General.APIToken;
+            _cachedData["username"] = name;
+            _cachedData["steam_id"] = id;
+            _cachedData["ip_address"] = address;
+            _cachedData["reason"] = reason;
 
-            return data;
+            return _cachedData;
         }
 
-        private Dictionary<string, string> GetPlayerUnbannedData(string id)
+        private Hash<string, string> GetPlayerUnbannedData(string id)
         {
-            Dictionary<string, string> data = new Dictionary<string, string>();
+            _cachedData.Clear();
 
-            data["api_key"] = Configuration.General.APIToken;
-            data["steam_id"] = id;
+            _cachedData["api_key"] = Configuration.General.APIToken;
+            _cachedData["steam_id"] = id;
 
-            return data;
+            return _cachedData;
         }
 
         public void StartGlobalTimers()
@@ -253,17 +251,17 @@ namespace Oxide.Plugins
             ConsoleLog("Starting 10 minute timer...");
             timer.Every(600f, () =>
             {
-                _Debug("Global Repeating Timer");
                 CreateServerData();
             });
 
             ConsoleLog("Starting 60 second timer...");
             timer.Every(60f, () =>
-            {
-                // Start the getPlayerClientDataCoroutine
-                clientDataCoroutine = getPlayerClientDataCoroutine();
-                ServerMgr.Instance.StartCoroutine(clientDataCoroutine);
+            {                
+                
             });
+
+            // Start the getPlayerClientDataCoroutine
+            ServerMgr.Instance.StartCoroutine(clientDataCoroutine = GetPlayerClientDataCoroutine());
         }
 
         #endregion
@@ -534,29 +532,6 @@ namespace Oxide.Plugins
             _Debug("------------------------------");
             _Debug("Method: TestApiConsoleCommand");
 
-            Dictionary<string, string> data = new Dictionary<string, string>();
-            data["api_key"] = Configuration.General.APIToken;
-            data["username"] = "BippyMiester";
-            data["steam_id"] = "1234567891234567";
-            data["ip_address"] = "127.0.0.1";
-            data["type"] = "quit";
-
-            // Playtime Tracker
-            if (!RustAnalyticsPlaytimeTracker)
-            {
-                ConsoleError($"RustMetricsPlaytimeTracker is not loaded, but you have tracking enabled. Download from here: {_DownloadLink}");
-                data["online_seconds"] = "1";
-                data["afk_seconds"] = "1";
-            }
-            else
-            {
-                data["online_seconds"] = "12";
-                data["afk_seconds"] = "12";
-            }
-
-            webhookCoroutine = WebhookSend(data, Configuration.API.PlayersConnectionRoute.Create);
-            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
-            ConsoleLog("Sent");
         }
 
         #endregion
@@ -875,19 +850,27 @@ namespace Oxide.Plugins
 
         #region Coroutines
 
-        private IEnumerator getPlayerClientDataCoroutine()
+        private IEnumerator GetPlayerClientDataCoroutine()
         {
             _Debug("------------------------------");
-            _Debug("Method: getPlayerClientDataCoroutine");
+            _Debug("Method: GetPlayerClientDataCoroutine");
 
-            _Debug("Looping through all players");
-            foreach (var player in BasePlayer.activePlayerList)
+            while (true)
             {
-                _Debug($"Player Name: {player.displayName}");
+                _Debug("Wait while server is empty");
+                yield return _waitWhileYieldInstruction;
 
-                GetPlayerPerformance(player, CreatePlayerData);
+                _Debug("Looping through all players");
+                foreach (BasePlayer player in BasePlayer.activePlayerList)
+                {
+                    _Debug($"Player Name: {player.displayName}");
 
-                yield return null;
+                    GetPlayerPerformance(player, CreatePlayerData);
+                    yield return null;
+                }
+
+                _Debug("Waiting 60 seconds before next check of all players");
+                yield return _waitYieldInstruction;
             }
         }
 
@@ -924,7 +907,7 @@ namespace Oxide.Plugins
             }
         }
 
-        private IEnumerator WebhookSend(Dictionary<string, string> data, string webhook)
+        private IEnumerator WebhookSend(Hash<string, string> data, string webhook)
         {
             // Create New Form Data
             WWWForm formData = new WWWForm();
@@ -935,7 +918,7 @@ namespace Oxide.Plugins
             }
 
             // Define the request
-            using (var request = UnityWebRequest.Post(webhook, formData))
+            using (UnityWebRequest request = UnityWebRequest.Post(webhook, formData))
             {
                 // Execute the request
                 yield return request.SendWebRequest();
