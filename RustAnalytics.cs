@@ -39,15 +39,6 @@ namespace Oxide.Plugins
         [PluginReference]
         Plugin RustAnalyticsPlaytimeTracker;
 
-        #region ChangeLog
-        /*
-         * 0.0.1
-         * 
-         * 
-         */
-        #endregion
-
-
         // Misc Variables
         private static RustAnalytics _pluginInstance;
         private SaveInfo _saveInfo = SaveInfo.Create(World.SaveFolderName + $"/player.blueprints.{Rust.Protocol.persistance}.db");
