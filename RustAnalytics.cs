@@ -241,11 +241,6 @@ namespace Oxide.Plugins
             return text + Convert.ToChar(65 + num3);
         }
 
-        public static BasePlayer FindAwakeOrSleeping(string strNameOrIDOrIP)
-        {
-            return BasePlayer.Find(strNameOrIDOrIP, BasePlayer.allPlayerList);
-        }
-
         #endregion
 
         #region CachedDataHandling
@@ -665,41 +660,46 @@ namespace Oxide.Plugins
                 _Debug($"Attacking Player: {player.displayName}");
                 _Debug($"Attacking Player ID: {player.UserIDString}");
                 // Check if the entity is a Storage Container (DestroyedContainer)
-                if (entity is StorageContainer)
+                CheckIfEntityIsStorage(player, entity, weapon);
+            }
+        }
+
+        private void CheckIfEntityIsStorage(BasePlayer player, BaseCombatEntity entity, string weapon)
+        {
+            if (entity is StorageContainer)
+            {
+                // Get the storage container
+                StorageContainer container = (StorageContainer)entity;
+                string containerName = containerTypes.ContainsKey(container.ShortPrefabName) ? containerTypes[container.ShortPrefabName] : container.ShortPrefabName;
+                _Debug($"Container (Short Prefab Name): {container.ShortPrefabName}");
+                _Debug($"Container (Proper Name): {containerName}");
+
+                // Get the player weapon
+                try
                 {
-                    // Get the storage container
-                    StorageContainer container = (StorageContainer)entity;
-                    string containerName = containerTypes.ContainsKey(container.ShortPrefabName) ? containerTypes[container.ShortPrefabName] : container.ShortPrefabName;
-                    _Debug($"Container (Short Prefab Name): {container.ShortPrefabName}");
-                    _Debug($"Container (Proper Name): {containerName}");
-
-                    // Get the player weapon
-                    try
-                    {
-                        weapon = player.GetActiveItem().info.displayName.english;
-                        _Debug($"Weapon: {weapon}");
-                    }
-                    catch
-                    {
-                        ConsoleWarn("Can Not Get Player Weapon");
-                    }
-
-                    // Get the container coordinates and grid
-                    string x = container.transform.position.x.ToString();
-                    string y = container.transform.position.y.ToString();
-                    string grid = GetGridFromPosition(container.transform.position);
-
-                    _Debug($"X Coordinate: {x}");
-                    _Debug($"Y Coordinate: {y}");
-                    _Debug($"Grid: {grid}");
-
-                    // Get the container Owner
-                    string containerOwner = FindAwakeOrSleeping(entity.OwnerID.ToString()).displayName;
-                    _Debug($"Container Owner: {containerOwner}");
-
-                    // Create the Destroyed Container Data
-                    CreateDestroyedContainerData(player, containerOwner, containerName, weapon, grid, x, y);
+                    weapon = player.GetActiveItem().info.displayName.english;
+                    _Debug($"Weapon: {weapon}");
                 }
+                catch
+                {
+                    ConsoleWarn("Can Not Get Player Weapon");
+                }
+
+                // Get the container coordinates and grid
+                string x = container.transform.position.x.ToString();
+                string y = container.transform.position.y.ToString();
+                string grid = GetGridFromPosition(container.transform.position);
+
+                _Debug($"X Coordinate: {x}");
+                _Debug($"Y Coordinate: {y}");
+                _Debug($"Grid: {grid}");
+
+                // Get the container Owner
+                string containerOwner = BasePlayer.FindAwakeOrSleeping(entity.OwnerID.ToString()).displayName;
+                _Debug($"Container Owner: {containerOwner}");
+
+                // Create the Destroyed Container Data
+                CreateDestroyedContainerData(player, containerOwner, containerName, weapon, grid, x, y);
             }
         }
 
