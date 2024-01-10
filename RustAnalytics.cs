@@ -116,6 +116,15 @@ namespace Oxide.Plugins
             {"flameturret.deployed", "Flame Turret"}
         };
 
+        private Hash<string, string> buildingTiers = new Hash<string, string>
+        {
+            {"twigs", "0"},
+            {"wood", "1"},
+            {"stone", "2"},
+            {"metal", "3"},
+            {"toptier", "4"}
+        };
+
         private void Init()
         {
             ConsoleLog($"{_PluginName} has been initialized...");
@@ -376,6 +385,20 @@ namespace Oxide.Plugins
             _cachedData["grid"] = grid;
             _cachedData["x"] = x;
             _cachedData["y"] = y;
+
+            return _cachedData;
+        }
+
+        private Hash<string, string> GetDestroyedContainersData(BasePlayer player, string owner, string type, string tier, string weapon, string grid)
+        {
+            ClearCachedData();
+            _cachedData["username"] = player.displayName;
+            _cachedData["steam_id"] = player.UserIDString;
+            _cachedData["owner"] = owner;
+            _cachedData["type"] = type;
+            _cachedData["tier"] = tier;
+            _cachedData["weapon"] = weapon;
+            _cachedData["grid"] = grid;
 
             return _cachedData;
         }
@@ -661,6 +684,9 @@ namespace Oxide.Plugins
                 _Debug($"Attacking Player ID: {player.UserIDString}");
                 // Check if the entity is a Storage Container (DestroyedContainer)
                 CheckIfEntityIsStorage(player, entity, weapon);
+
+                // Check if the entity is a Building Block (DestroyedBuilding)
+                CheckIfEntityIsBuilding(player, entity, weapon);
             }
         }
 
@@ -703,6 +729,44 @@ namespace Oxide.Plugins
             }
         }
 
+        private void CheckIfEntityIsBuilding(BasePlayer player, BaseCombatEntity entity, string weapon)
+        {
+            if (entity is BuildingBlock)
+            {
+                // Get the destroyed building block
+                BuildingBlock destroyedBuilding = (BuildingBlock)entity;
+                string buildingName = destroyedBuilding.blockDefinition.info.name.english;
+                string tierName = destroyedBuilding.currentGrade.gradeBase.name;
+                string tierIntStr = buildingTiers.ContainsKey(tierName) ? buildingTiers[tierName] : tierName;
+
+                _Debug($"Building Name: {buildingName}");
+                _Debug($"Building Tier: {tierName}");
+                _Debug($"Building Tier (IntStr): {tierIntStr}");
+
+                // Get the player weapon
+                try
+                {
+                    weapon = player.GetActiveItem().info.displayName.english;
+                    _Debug($"Weapon: {weapon}");
+                }
+                catch
+                {
+                    ConsoleWarn("Can Not Get Player Weapon");
+                }
+
+                // Get the building block grid
+                string grid = GetGridFromPosition(destroyedBuilding.transform.position);
+                _Debug($"Grid: {grid}");
+
+                // Get the building Owner
+                string buildingOwner = BasePlayer.FindAwakeOrSleeping(entity.OwnerID.ToString()).displayName;
+                _Debug($"Building Owner: {buildingOwner}");
+
+                // Create the Destroyed Container Data
+                CreateDestroyedBuildingData(player, buildingOwner, buildingName, tierIntStr, weapon, grid);
+            }
+        }
+
         #endregion
 
         #endregion Hooks
@@ -728,7 +792,7 @@ namespace Oxide.Plugins
         private void CreatePlayerData(ClientPerformanceReport clientPerformanceReport)
         {
             _Debug("------------------------------");
-            _Debug("Method: OnPlayerConnected");
+            _Debug("Method: CreatePlayerData");
             _Debug($"Player: {clientPerformanceReport.user_id} | Framerate: {clientPerformanceReport.fps} | Ping: {clientPerformanceReport.ping}");
 
             var data = GetPlayerClientData(clientPerformanceReport);
@@ -774,6 +838,14 @@ namespace Oxide.Plugins
             var data = GetDestroyedContainersData(player, owner, type, weapon, grid, x, y);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.DestroyedContainersRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreateDestroyedBuildingData(BasePlayer player, string owner, string type, string tier, string weapon, string grid)
+        {
+            var data = GetDestroyedContainersData(player, owner, type, tier, weapon, grid);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.DestroyedBuildingRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
