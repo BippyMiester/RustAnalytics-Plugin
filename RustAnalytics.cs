@@ -11,9 +11,6 @@ using Oxide.Core.Libraries.Covalence;
 using Oxide.Core.Plugins;
 using UnityEngine;
 using UnityEngine.Networking;
-using System.Net.Sockets;
-using static Steamworks.InventoryItem;
-using Rust;
 //Reference: 0Harmony
 #if CARBON
     using HarmonyLib;
@@ -33,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.14";
+        private const string _PluginVersion = "0.0.15";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _DownloadLink = "INSERT_LINK_HERE";
 
@@ -57,7 +54,7 @@ namespace Oxide.Plugins
         private HInstance _harmonyInstance;
         private string HarmonyId => $"com.{_PluginAuthor}.{_PluginName}";
 
-        // Rust Item Variables
+        // Rust Item/Prefab Definition Variables
         private Hash<string, string> rocketAmmoTypes = new Hash<string, string>
         {
             {"ROCKET_BASIC", "Rocket"},
@@ -125,6 +122,17 @@ namespace Oxide.Plugins
             {"toptier", "4"}
         };
 
+        private Hash<string, string> animalTypes = new Hash<string, string>
+        {
+            {"bear", "Bear"},
+            {"boar", "Boar"},
+            {"chicken", "Chicken"},
+            {"horse", "Horse"},
+            {"polarbear", "Polar Bear"},
+            {"stag", "Stag"},
+            {"wolf", "Wolf"}
+        };
+
         private void Init()
         {
             ConsoleLog($"{_PluginName} has been initialized...");
@@ -142,7 +150,7 @@ namespace Oxide.Plugins
             //ShowSplashScreen();
             _pluginInstance = this;
             PatchHarmony();
-            StartGlobalTimers();
+            //StartGlobalTimers();
         }
 
         private void Loaded()
@@ -248,6 +256,11 @@ namespace Oxide.Plugins
                 }
             }
             return text + Convert.ToChar(65 + num3);
+        }
+
+        private int GetVectorDistance(BaseCombatEntity victim, BaseEntity attacker)
+        {
+            return Convert.ToInt32(Vector3.Distance(victim.transform.position, attacker.transform.position));
         }
 
         #endregion
@@ -399,6 +412,18 @@ namespace Oxide.Plugins
             _cachedData["tier"] = tier;
             _cachedData["weapon"] = weapon;
             _cachedData["grid"] = grid;
+
+            return _cachedData;
+        }
+
+        private Hash<string, string> GetAnimalKillData(BasePlayer player, string animal, string distance, string weapon)
+        {
+            ClearCachedData();
+            _cachedData["username"] = player.displayName;
+            _cachedData["steam_id"] = player.UserIDString;
+            _cachedData["animal_type"] = animal;
+            _cachedData["distance"] = distance;
+            _cachedData["weapon"] = weapon;
 
             return _cachedData;
         }
@@ -672,13 +697,13 @@ namespace Oxide.Plugins
 
         private void OnEntityDeath(BaseCombatEntity entity, HitInfo hitInfo)
         {
-            _Debug("------------------------------");
-            _Debug("Method: OnEntityDeath");
-            string weapon = "Weapon Not Found";
-
             // Check if the last attacker was a BasePlayer
             if(entity.lastAttacker is BasePlayer && entity.lastAttacker != null)
             {
+                _Debug("------------------------------");
+                _Debug("Method: OnEntityDeath");
+                string weapon = "Weapon Not Found";
+
                 BasePlayer player = (BasePlayer)entity.lastAttacker;
                 _Debug($"Attacking Player: {player.displayName}");
                 _Debug($"Attacking Player ID: {player.UserIDString}");
@@ -687,6 +712,9 @@ namespace Oxide.Plugins
 
                 // Check if the entity is a Building Block (DestroyedBuilding)
                 CheckIfEntityIsBuilding(player, entity, weapon);
+
+                // Check if the entity is an animal (AnimalKill)
+                CheckIfEntityIsAnimal(player, entity, hitInfo, weapon);
             }
         }
 
@@ -694,6 +722,7 @@ namespace Oxide.Plugins
         {
             if (entity is StorageContainer)
             {
+                _Debug("Entity: StorageContainer");
                 // Get the storage container
                 StorageContainer container = (StorageContainer)entity;
                 string containerName = containerTypes.ContainsKey(container.ShortPrefabName) ? containerTypes[container.ShortPrefabName] : container.ShortPrefabName;
@@ -733,6 +762,7 @@ namespace Oxide.Plugins
         {
             if (entity is BuildingBlock)
             {
+                _Debug("Entity: BuildingBlock");
                 // Get the destroyed building block
                 BuildingBlock destroyedBuilding = (BuildingBlock)entity;
                 string buildingName = destroyedBuilding.blockDefinition.info.name.english;
@@ -762,8 +792,47 @@ namespace Oxide.Plugins
                 string buildingOwner = BasePlayer.FindAwakeOrSleeping(entity.OwnerID.ToString()).displayName;
                 _Debug($"Building Owner: {buildingOwner}");
 
-                // Create the Destroyed Container Data
+                // Create the Destroyed Building Data
                 CreateDestroyedBuildingData(player, buildingOwner, buildingName, tierIntStr, weapon, grid);
+            }
+        }
+
+        private void CheckIfEntityIsAnimal(BasePlayer player, BaseCombatEntity entity, HitInfo hitInfo, string weapon)
+        {
+            if (entity is BaseAnimalNPC)
+            {
+                _Debug("Entity: BaseAnimalNPC");
+                // Get the player weapon
+                try
+                {
+                    weapon = player.GetActiveItem().info.displayName.english;
+                    _Debug($"Weapon: {weapon}");
+                }
+                catch
+                {
+                    ConsoleWarn("Can Not Get Player Weapon");
+                }
+
+                // Get the distance
+                string distance;
+                if(hitInfo != null)
+                {
+                    // Animal died to bullet
+                    distance = GetVectorDistance(entity, hitInfo.Initiator).ToString() ?? "0";
+                }
+                else
+                {
+                    // Animal died to bleed
+                    distance = GetVectorDistance(entity, player).ToString() ?? "0";
+                }
+                _Debug($"Distance: {distance}");
+
+                // Get Animal
+                string animal = animalTypes.ContainsKey(entity.ShortPrefabName) ? animalTypes[entity.ShortPrefabName] : entity.ShortPrefabName;
+                _Debug($"Animal: {animal}");
+
+                // Create the Animal Kill Data
+                CreateAnimalKillData(player, animal, distance, weapon);
             }
         }
 
@@ -846,6 +915,14 @@ namespace Oxide.Plugins
             var data = GetDestroyedContainersData(player, owner, type, tier, weapon, grid);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.DestroyedBuildingRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreateAnimalKillData(BasePlayer player, string animal, string distance, string weapon)
+        {
+            var data = GetAnimalKillData(player, animal, distance, weapon);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.AnimalKillsRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
