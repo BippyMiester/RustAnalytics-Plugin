@@ -12,6 +12,8 @@ using Oxide.Core.Plugins;
 using UnityEngine;
 using UnityEngine.Networking;
 using System.Net.Sockets;
+using static Steamworks.InventoryItem;
+using Rust;
 //Reference: 0Harmony
 #if CARBON
     using HarmonyLib;
@@ -54,6 +56,16 @@ namespace Oxide.Plugins
         // Harmony Variables
         private HInstance _harmonyInstance;
         private string HarmonyId => $"com.{_PluginAuthor}.{_PluginName}";
+
+        // Rust Item Variables
+        private Hash<string, string> rocketAmmoTypes = new Hash<string, string>
+        {
+            {"ROCKET_BASIC", "Rocket"},
+            {"ROCKET_SMOKE", "Smoke Rocket"},
+            {"ROCKET_HV", "High Velocity Rocket"},
+            {"ROCKET_FIRE", "Incendiary Rocket"},
+            {"ROCKET_HEATSEEKER", "Homing Missile"}
+        };
 
         private void Init()
         {
@@ -267,6 +279,19 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
+        private Hash<string, string> GetWeaponFireData(BasePlayer player, string bullet, string weapon)
+        {
+            _cachedData.Clear();
+            _cachedData["api_key"] = Configuration.General.APIToken;
+            _cachedData["username"] = player.displayName;
+            _cachedData["steam_id"] = player.UserIDString;
+            _cachedData["bullet"] = bullet;
+            _cachedData["weapon"] = weapon;
+            _cachedData["amount"] = "1";
+
+            return _cachedData;
+        }
+
         #endregion
         
         #region Harmony Helpers
@@ -452,6 +477,86 @@ namespace Oxide.Plugins
 
         #endregion
 
+        #region WeaponFire
+        private void OnWeaponFired(BaseProjectile projectile, BasePlayer player, ItemModProjectile itemProjectile, object projectiles)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnWeaponFired");
+
+            // Define Some Variables
+            string bullet = "Not Found";
+            string weapon = "Not Found";
+
+            // Define the weapon
+            if (player.GetActiveItem() != null)
+            {
+                weapon = player.GetActiveItem().info.displayName.english;
+            }
+
+            // Try and get the bullet information
+            try
+            {
+                bullet = projectile.primaryMagazine.ammoType.displayName.english;
+            }
+            catch (Exception e)
+            {
+                ConsoleWarn("Can Not Get Bullet Information: " + e.StackTrace);
+                if (projectile == null)
+                {
+                    ConsoleWarn("Projectile is null");
+                }
+                else if (projectile.primaryMagazine == null)
+                {
+                    ConsoleWarn("Projectile Primary Magazine is null");
+                }
+                else if (projectile.primaryMagazine.ammoType == null)
+                {
+                    ConsoleWarn("Projectile Primary Magazine Ammo Type is null");
+                }
+                return;
+            }
+
+            _Debug($"Player: {player.displayName}");
+            _Debug($"Steam ID: {player.UserIDString}");
+            _Debug($"Weapon: {weapon}");
+            _Debug($"Bullet: {bullet}");
+
+            CreateWeaponFireData(player, weapon, bullet);
+        }
+
+        private void OnExplosiveThrown(BasePlayer player, BaseEntity entity)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnExplosiveThrown");
+            _Debug($"Player: {player.displayName}");
+            _Debug($"Steam ID: {player.UserIDString}");
+
+            string explosive = player.GetActiveItem().info.displayName.english;
+            _Debug($"Explosive: {explosive}");
+            CreateWeaponFireData(player, explosive, explosive);
+        }
+
+        private void OnRocketLaunched(BasePlayer player, BaseEntity entity)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnRocketLaunched");
+            _Debug($"Player: {player.displayName}");
+            _Debug($"Steam ID: {player.UserIDString}");
+
+            // Define some variables
+            string rocketName = player.GetActiveItem().info.displayName.english;
+            string ammo = rocketAmmoTypes.ContainsKey(entity.ShortPrefabName.ToUpper()) ? rocketAmmoTypes[entity.ShortPrefabName.ToUpper()] : entity.ShortPrefabName.ToUpper();
+
+            _Debug($"Rocket Launcher: {rocketName}");
+            _Debug($"Rocket Ammo: {ammo}");
+
+            CreateWeaponFireData(player, rocketName, ammo);
+        }
+
+        #endregion
+
+        #endregion Hooks
+
         #region Database Methods
 
         public void CreatePlayerConnectionData(BasePlayer player, string type)
@@ -503,6 +608,14 @@ namespace Oxide.Plugins
             var data = GetPlayerGatherData(itemName, amount, player);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.GatheringRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreateWeaponFireData(BasePlayer player, string bullet, string weapon)
+        {
+            var data = GetWeaponFireData(player, bullet, weapon);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.WeaponFireRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
