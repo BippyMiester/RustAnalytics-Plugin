@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.20";
+        private const string _PluginVersion = "0.0.21";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _DownloadLink = "INSERT_LINK_HERE";
 
@@ -758,25 +758,25 @@ namespace Oxide.Plugins
                 _Debug($"Attacking Player ID: {player.UserIDString}");
 
                 // Check if the entity is a BasePlayer and the entity isn't the same as the last attacker (PlayerKill)
-                if (CheckIfEntityIsPlayerKill(player, entity, hitInfo, weapon)) return;
+                if (OnEntityDeathCheckIfEntityIsPlayerKill(player, entity, hitInfo, weapon)) return;
 
                 // Check if the entity is a Storage Container (DestroyedContainer)
-                if (CheckIfEntityIsStorage(player, entity, weapon)) return;
+                if (OnEntityDeathCheckIfEntityIsStorage(player, entity, weapon)) return;
 
                 // Check if the entity is a Building Block (DestroyedBuilding)
-                if (CheckIfEntityIsBuilding(player, entity, weapon)) return;
+                if (OnEntityDeathCheckIfEntityIsBuilding(player, entity, weapon)) return;
 
                 // Check if the entity is an animal (AnimalKill)
-                if (CheckIfEntityIsAnimal(player, entity, hitInfo, weapon)) return;
+                if (OnEntityDeathCheckIfEntityIsAnimal(player, entity, hitInfo, weapon)) return;
             }
             else
             {
                 // Check if the entity is a BasePlayer (PlayerDeath)
-                if (CheckIfEntityIsBasePlayer(entity)) return;
+                if (OnEntityDeathCheckIfEntityIsBasePlayer(entity)) return;
             }
         }
 
-        private bool CheckIfEntityIsStorage(BasePlayer player, BaseCombatEntity entity, string weapon)
+        private bool OnEntityDeathCheckIfEntityIsStorage(BasePlayer player, BaseCombatEntity entity, string weapon)
         {
             if (entity is StorageContainer)
             {
@@ -811,7 +811,7 @@ namespace Oxide.Plugins
             return true;
         }
 
-        private bool CheckIfEntityIsBuilding(BasePlayer player, BaseCombatEntity entity, string weapon)
+        private bool OnEntityDeathCheckIfEntityIsBuilding(BasePlayer player, BaseCombatEntity entity, string weapon)
         {
             if (entity is BuildingBlock)
             {
@@ -844,7 +844,7 @@ namespace Oxide.Plugins
             return true;
         }
 
-        private bool CheckIfEntityIsAnimal(BasePlayer player, BaseCombatEntity entity, HitInfo hitInfo, string weapon)
+        private bool OnEntityDeathCheckIfEntityIsAnimal(BasePlayer player, BaseCombatEntity entity, HitInfo hitInfo, string weapon)
         {
             if (entity is BaseAnimalNPC)
             {
@@ -868,7 +868,7 @@ namespace Oxide.Plugins
             return true;
         }
 
-        private bool CheckIfEntityIsBasePlayer(BaseCombatEntity entity)
+        private bool OnEntityDeathCheckIfEntityIsBasePlayer(BaseCombatEntity entity)
         {
             if (entity is BasePlayer)
             {
@@ -892,7 +892,7 @@ namespace Oxide.Plugins
             return true;
         }
 
-        private bool CheckIfEntityIsPlayerKill(BasePlayer player, BaseCombatEntity entity, HitInfo hitInfo, string weapon)
+        private bool OnEntityDeathCheckIfEntityIsPlayerKill(BasePlayer player, BaseCombatEntity entity, HitInfo hitInfo, string weapon)
         {
             _Debug("------------------------------");
             _Debug("Method: CheckIfEntityIsPlayerKill");
