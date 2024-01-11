@@ -32,7 +32,12 @@ def create_release(repo, version, token):
         'prerelease': False
     }
     response = requests.post(url, json=data, headers=headers)
-    return response.status_code == 201
+    if response.status_code == 201:
+        return True
+    else:
+        print(f"Failed to create release: {response.status_code}")
+        print(f"Response: {response.json()}")
+        return False
 
 # Main execution
 def main():
