@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.17";
+        private const string _PluginVersion = "0.0.18";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _DownloadLink = "INSERT_LINK_HERE";
 
@@ -257,6 +257,35 @@ namespace Oxide.Plugins
             return Convert.ToInt32(Vector3.Distance(victim.transform.position, attacker.transform.position));
         }
 
+        private string formatBodyPartName(HitInfo hitInfo)
+        {
+            string bodypart = "Bodypart Not Found";
+            bodypart = StringPool.Get(Convert.ToUInt32(hitInfo?.HitBone)) ?? "Bodypart Not Found";
+            if ((bool)string.IsNullOrEmpty(bodypart)) bodypart = "Bodypart Not Found";
+            for (int i = 0; i < 10; i++)
+            {
+                bodypart = bodypart.Replace(i.ToString(), "");
+            }
+
+            bodypart = bodypart.Replace(".prefab", "");
+            bodypart = bodypart.Replace("L", "");
+            bodypart = bodypart.Replace("R", "");
+            bodypart = bodypart.Replace("_", "");
+            bodypart = bodypart.Replace(".", "");
+            bodypart = bodypart.Replace("right", "");
+            bodypart = bodypart.Replace("left", "");
+            bodypart = bodypart.Replace("tranform", "");
+            bodypart = bodypart.Replace("lowerjaweff", "jaw");
+            bodypart = bodypart.Replace("rarmpolevector", "arm");
+            bodypart = bodypart.Replace("connection", "");
+            bodypart = bodypart.Replace("uppertight", "tight");
+            bodypart = bodypart.Replace("fatjiggle", "");
+            bodypart = bodypart.Replace("fatend", "");
+            bodypart = bodypart.Replace("seff", "");
+            bodypart = bodypart.ToUpper();
+            return bodypart;
+        }
+
         #endregion
 
         #region CachedDataHandling
@@ -431,6 +460,19 @@ namespace Oxide.Plugins
             _cachedData["x"] = x;
             _cachedData["y"] = y;
             _cachedData["grid"] = grid;
+
+            return _cachedData;
+        }
+
+        private Hash<string, string> GetPlayerKillData(BasePlayer attacker, BasePlayer victim, string weapon, string bodyPart, string distance)
+        {
+            ClearCachedData();
+            _cachedData["username"] = attacker.displayName;
+            _cachedData["steam_id"] = attacker.UserIDString;
+            _cachedData["victim"] = victim.displayName;
+            _cachedData["weapon"] = weapon;
+            _cachedData["body_part"] = bodyPart;
+            _cachedData["distance"] = distance;
 
             return _cachedData;
         }
@@ -714,6 +756,10 @@ namespace Oxide.Plugins
                 BasePlayer player = (BasePlayer)entity.lastAttacker;
                 _Debug($"Attacking Player: {player.displayName}");
                 _Debug($"Attacking Player ID: {player.UserIDString}");
+
+                // Check if the entity is a BasePlayer and the entity isn't the same as the last attacker (PlayerKill)
+                if (CheckIfEntityIsPlayerKill(player, entity, hitInfo, weapon)) return;
+
                 // Check if the entity is a Storage Container (DestroyedContainer)
                 if (CheckIfEntityIsStorage(player, entity, weapon)) return;
 
@@ -722,7 +768,6 @@ namespace Oxide.Plugins
 
                 // Check if the entity is an animal (AnimalKill)
                 if (CheckIfEntityIsAnimal(player, entity, hitInfo, weapon)) return;
-
             }
             else
             {
@@ -743,15 +788,8 @@ namespace Oxide.Plugins
                 _Debug($"Container (Proper Name): {containerName}");
 
                 // Get the player weapon
-                try
-                {
-                    weapon = player.GetActiveItem().info.displayName.english;
-                    _Debug($"Weapon: {weapon}");
-                }
-                catch
-                {
-                    ConsoleWarn("Can Not Get Player Weapon");
-                }
+                weapon = player.GetActiveItem()?.info?.displayName?.english ?? "Unknown Weapon";
+                _Debug($"Weapon: {weapon}");
 
                 // Get the container coordinates and grid
                 string x = container.transform.position.x.ToString();
@@ -789,15 +827,8 @@ namespace Oxide.Plugins
                 _Debug($"Building Tier (IntStr): {tierIntStr}");
 
                 // Get the player weapon
-                try
-                {
-                    weapon = player.GetActiveItem().info.displayName.english;
-                    _Debug($"Weapon: {weapon}");
-                }
-                catch
-                {
-                    ConsoleWarn("Can Not Get Player Weapon");
-                }
+                weapon = player.GetActiveItem()?.info?.displayName?.english ?? "Unknown Weapon";
+                _Debug($"Weapon: {weapon}");
 
                 // Get the building block grid
                 string grid = GetGridFromPosition(destroyedBuilding.transform.position);
@@ -819,28 +850,12 @@ namespace Oxide.Plugins
             {
                 _Debug("Entity: BaseAnimalNPC");
                 // Get the player weapon
-                try
-                {
-                    weapon = player.GetActiveItem().info.displayName.english;
-                    _Debug($"Weapon: {weapon}");
-                }
-                catch
-                {
-                    ConsoleWarn("Can Not Get Player Weapon");
-                }
+                weapon = player.GetActiveItem()?.info?.displayName?.english ?? "Unknown Weapon";
+                _Debug($"Weapon: {weapon}");
 
                 // Get the distance
                 string distance;
-                if(hitInfo != null)
-                {
-                    // Animal died to bullet
-                    distance = GetVectorDistance(entity, hitInfo.Initiator).ToString() ?? "0";
-                }
-                else
-                {
-                    // Animal died to bleed
-                    distance = GetVectorDistance(entity, player).ToString() ?? "0";
-                }
+                distance = GetVectorDistance(entity, hitInfo != null ? hitInfo.Initiator : player).ToString() ?? "0";
                 _Debug($"Distance: {distance}");
 
                 // Get Animal
@@ -872,6 +887,41 @@ namespace Oxide.Plugins
 
                 // Create the Animal Kill Data
                 CreatePlayerDeathData((BasePlayer)entity, reason, x, y, grid);
+            }
+
+            return true;
+        }
+
+        private bool CheckIfEntityIsPlayerKill(BasePlayer player, BaseCombatEntity entity, HitInfo hitInfo, string weapon)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: CheckIfEntityIsPlayerKill");
+
+            // For Debug Purposes Change BasePlayer to NPCPlayer (Use the `spawn npcplayertest` command to spawn a fake player)
+            if (entity != entity.lastAttacker && entity is BasePlayer)
+            {
+                // Grab the victim and the attacker
+                BasePlayer victim = entity as BasePlayer;
+                BasePlayer attacker = (BasePlayer)victim.lastAttacker;
+
+                // Check if they are NPC's
+                // Also comment out this line if debugging as well
+                if (attacker.IsNpc || victim.IsNpc) return true;
+
+                // Get the player weapon
+                weapon = player.GetActiveItem()?.info?.displayName?.english ?? "Unknown Weapon";
+                _Debug($"Weapon: {weapon}");
+
+                // Get the distance
+                string distance;
+                distance = GetVectorDistance(entity, hitInfo != null ? hitInfo.Initiator : player).ToString() ?? "0";
+                _Debug($"Distance: {distance}");
+
+                // Get Body Part
+                string bodyPart = formatBodyPartName(hitInfo);
+                _Debug($"Body Part: {bodyPart}");
+
+                CreatePlayerKillData(attacker, victim, weapon, bodyPart, distance);
             }
 
             return true;
@@ -972,6 +1022,14 @@ namespace Oxide.Plugins
             var data = GetPlayerDeathData(player, reason, x, y, grid);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.DeathsRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreatePlayerKillData(BasePlayer attacker, BasePlayer victim, string weapon, string bodyPart, string distance)
+        {
+            var data = GetPlayerKillData(attacker, victim, weapon, bodyPart, distance);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.KillsRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
