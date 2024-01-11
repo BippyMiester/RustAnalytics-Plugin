@@ -22,6 +22,10 @@ jobs:
     - name: Install dependencies
       run: pip install requests
 
+    - name: Bundle Files
+    run: |
+      zip release_files.zip RustAnalytics.cs README.md LICENSE.md RustAnalyticsPlaytimeTracker.cs
+      
     - name: Compare and Release
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
