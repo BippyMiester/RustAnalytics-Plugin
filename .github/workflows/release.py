@@ -1,6 +1,7 @@
 import requests
 import re
 import os
+import zipfile
 
 # Function to extract version from RustAnalytics.cs
 def extract_version():
@@ -58,7 +59,7 @@ def main():
     repo = 'BippyMiester/RustAnalytics-Plugin'  # Replace with your repository
     token = os.environ['GITHUB_TOKEN']  # Ensure GITHUB_TOKEN is set in your secrets
     files_to_bundle = ['RustAnalytics.cs', 'README.md', 'LICENSE.md', 'RustAnalyticsPlaytimeTracker.cs']
-    
+
     current_version = extract_version()
     latest_release = get_latest_release(repo)
     print(f"Current Version: {current_version}")
