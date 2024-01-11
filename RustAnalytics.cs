@@ -290,7 +290,7 @@ namespace Oxide.Plugins
 
         #region CachedDataHandling
 
-        private Hash<string, string> GetServerData()
+        private Hash<string, string> SetServerData()
         {
             uint worldSize = World.Size / 1000;
             double usedMemory = Math.Round((Performance.current.memoryUsageSystem * 1f) / 1024, 2);
@@ -334,7 +334,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetPlayerConnectionData(BasePlayer player, string type)
+        private Hash<string, string> SetPlayerConnectionData(BasePlayer player, string type)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -358,7 +358,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetPlayerClientData(ClientPerformanceReport clientPerformanceReport)
+        private Hash<string, string> SetPlayerClientData(ClientPerformanceReport clientPerformanceReport)
         {
             ClearCachedData();
             _cachedData["steam_id"] = clientPerformanceReport.user_id;
@@ -368,7 +368,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetPlayerBannedData(string name, string id, string address, string reason)
+        private Hash<string, string> SetPlayerBannedData(string name, string id, string address, string reason)
         {
             ClearCachedData();
             _cachedData["username"] = name;
@@ -379,7 +379,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetPlayerUnbannedData(string id)
+        private Hash<string, string> SetPlayerUnbannedData(string id)
         {
             ClearCachedData();
             _cachedData["steam_id"] = id;
@@ -387,7 +387,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetPlayerGatherData(string itemName, string amount, BasePlayer player)
+        private Hash<string, string> SetPlayerGatherData(string itemName, string amount, BasePlayer player)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -398,7 +398,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetWeaponFireData(BasePlayer player, string bullet, string weapon)
+        private Hash<string, string> SetWeaponFireData(BasePlayer player, string bullet, string weapon)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -410,7 +410,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetDestroyedContainersData(BasePlayer player, string owner, string type, string weapon, string grid, string x, string y)
+        private Hash<string, string> SetDestroyedContainersData(BasePlayer player, string owner, string type, string weapon, string grid, string x, string y)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -425,7 +425,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetDestroyedContainersData(BasePlayer player, string owner, string type, string tier, string weapon, string grid)
+        private Hash<string, string> SetDestroyedContainersData(BasePlayer player, string owner, string type, string tier, string weapon, string grid)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -439,7 +439,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetAnimalKillData(BasePlayer player, string animal, string distance, string weapon)
+        private Hash<string, string> SetAnimalKillData(BasePlayer player, string animal, string distance, string weapon)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -451,7 +451,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetPlayerDeathData(BasePlayer player, string reason, string x, string y, string grid)
+        private Hash<string, string> SetPlayerDeathData(BasePlayer player, string reason, string x, string y, string grid)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -464,7 +464,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetPlayerKillData(BasePlayer attacker, BasePlayer victim, string weapon, string bodyPart, string distance)
+        private Hash<string, string> SetPlayerKillData(BasePlayer attacker, BasePlayer victim, string weapon, string bodyPart, string distance)
         {
             ClearCachedData();
             _cachedData["username"] = attacker.displayName;
@@ -477,7 +477,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetPlacedStructureData(BasePlayer player, string type)
+        private Hash<string, string> SetPlacedStructureData(BasePlayer player, string type)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -488,7 +488,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetPlacedDeployableData(BasePlayer player, string type)
+        private Hash<string, string> SetPlacedDeployableData(BasePlayer player, string type)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -499,7 +499,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> GetPlayerCraftingData(BasePlayer player, string itemName, string amount)
+        private Hash<string, string> SetPlayerCraftingData(BasePlayer player, string itemName, string amount)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -1029,7 +1029,7 @@ namespace Oxide.Plugins
 
         public void CreatePlayerConnectionData(BasePlayer player, string type)
         {
-            var data = GetPlayerConnectionData(player, type);
+            var data = SetPlayerConnectionData(player, type);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.PlayersConnectionRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1037,7 +1037,7 @@ namespace Oxide.Plugins
 
         public void CreateServerData()
         {
-            var data = GetServerData();
+            var data = SetServerData();
 
             webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1049,7 +1049,7 @@ namespace Oxide.Plugins
             _Debug("Method: CreatePlayerData");
             _Debug($"Player: {clientPerformanceReport.user_id} | Framerate: {clientPerformanceReport.fps} | Ping: {clientPerformanceReport.ping}");
 
-            var data = GetPlayerClientData(clientPerformanceReport);
+            var data = SetPlayerClientData(clientPerformanceReport);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.PlayersDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1057,7 +1057,7 @@ namespace Oxide.Plugins
 
         private void CreatePlayerBannedData(string name, string id, string address, string reason)
         {
-            var data = GetPlayerBannedData(name, id, address, reason);
+            var data = SetPlayerBannedData(name, id, address, reason);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.PlayerBanDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1065,7 +1065,7 @@ namespace Oxide.Plugins
 
         private void DestroyPlayerBannedData(string id)
         {
-            var data = GetPlayerUnbannedData(id);
+            var data = SetPlayerUnbannedData(id);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.PlayerBanDataRoute.Destroy);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1073,7 +1073,7 @@ namespace Oxide.Plugins
 
         private void CreatePlayerGatherData(string itemName, string amount, BasePlayer player)
         {
-            var data = GetPlayerGatherData(itemName, amount, player);
+            var data = SetPlayerGatherData(itemName, amount, player);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.GatheringRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1081,7 +1081,7 @@ namespace Oxide.Plugins
 
         private void CreateWeaponFireData(BasePlayer player, string bullet, string weapon)
         {
-            var data = GetWeaponFireData(player, bullet, weapon);
+            var data = SetWeaponFireData(player, bullet, weapon);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.WeaponFireRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1089,7 +1089,7 @@ namespace Oxide.Plugins
 
         private void CreateDestroyedContainerData(BasePlayer player, string owner, string type, string weapon, string grid, string x, string y)
         {
-            var data = GetDestroyedContainersData(player, owner, type, weapon, grid, x, y);
+            var data = SetDestroyedContainersData(player, owner, type, weapon, grid, x, y);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.DestroyedContainersRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1097,7 +1097,7 @@ namespace Oxide.Plugins
 
         private void CreateDestroyedBuildingData(BasePlayer player, string owner, string type, string tier, string weapon, string grid)
         {
-            var data = GetDestroyedContainersData(player, owner, type, tier, weapon, grid);
+            var data = SetDestroyedContainersData(player, owner, type, tier, weapon, grid);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.DestroyedBuildingRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1105,7 +1105,7 @@ namespace Oxide.Plugins
 
         private void CreateAnimalKillData(BasePlayer player, string animal, string distance, string weapon)
         {
-            var data = GetAnimalKillData(player, animal, distance, weapon);
+            var data = SetAnimalKillData(player, animal, distance, weapon);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.AnimalKillsRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1113,7 +1113,7 @@ namespace Oxide.Plugins
 
         private void CreatePlayerDeathData(BasePlayer player, string reason, string x, string y, string grid)
         {
-            var data = GetPlayerDeathData(player, reason, x, y, grid);
+            var data = SetPlayerDeathData(player, reason, x, y, grid);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.DeathsRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1121,7 +1121,7 @@ namespace Oxide.Plugins
 
         private void CreatePlayerKillData(BasePlayer attacker, BasePlayer victim, string weapon, string bodyPart, string distance)
         {
-            var data = GetPlayerKillData(attacker, victim, weapon, bodyPart, distance);
+            var data = SetPlayerKillData(attacker, victim, weapon, bodyPart, distance);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.KillsRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1129,7 +1129,7 @@ namespace Oxide.Plugins
 
         private void CreatePlacedStructureData(BasePlayer player, string type)
         {
-            var data = GetPlacedStructureData(player, type);
+            var data = SetPlacedStructureData(player, type);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.PlacedStructuresRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1137,7 +1137,7 @@ namespace Oxide.Plugins
 
         private void CreatePlacedDeployableData(BasePlayer player, string type)
         {
-            var data = GetPlacedDeployableData(player, type);
+            var data = SetPlacedDeployableData(player, type);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.PlacedDeployablesRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1145,7 +1145,7 @@ namespace Oxide.Plugins
 
         private void CreatePlayerCraftingData(BasePlayer player, string itemName, string amount)
         {
-            var data = GetPlayerCraftingData(player, itemName, amount);
+            var data = SetPlayerCraftingData(player, itemName, amount);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.CraftingRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1212,7 +1212,7 @@ namespace Oxide.Plugins
             _Debug("------------------------------");
             _Debug("Method: TestConsoleCommand");
 
-            var data = GetServerData();
+            var data = SetServerData();
             webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
             ConsoleLog("Sent");
