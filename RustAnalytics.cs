@@ -715,21 +715,23 @@ namespace Oxide.Plugins
                 _Debug($"Attacking Player: {player.displayName}");
                 _Debug($"Attacking Player ID: {player.UserIDString}");
                 // Check if the entity is a Storage Container (DestroyedContainer)
-                CheckIfEntityIsStorage(player, entity, weapon);
+                if (CheckIfEntityIsStorage(player, entity, weapon)) return;
 
                 // Check if the entity is a Building Block (DestroyedBuilding)
-                CheckIfEntityIsBuilding(player, entity, weapon);
+                if (CheckIfEntityIsBuilding(player, entity, weapon)) return;
 
                 // Check if the entity is an animal (AnimalKill)
-                CheckIfEntityIsAnimal(player, entity, hitInfo, weapon);
+                if (CheckIfEntityIsAnimal(player, entity, hitInfo, weapon)) return;
 
             }
-
-            // Check if the entity is a BasePlayer (PlayerDeath)
-            CheckIfEntityIsBasePlayer(entity);
+            else
+            {
+                // Check if the entity is a BasePlayer (PlayerDeath)
+                if (CheckIfEntityIsBasePlayer(entity)) return;
+            }
         }
 
-        private void CheckIfEntityIsStorage(BasePlayer player, BaseCombatEntity entity, string weapon)
+        private bool CheckIfEntityIsStorage(BasePlayer player, BaseCombatEntity entity, string weapon)
         {
             if (entity is StorageContainer)
             {
@@ -767,9 +769,11 @@ namespace Oxide.Plugins
                 // Create the Destroyed Container Data
                 CreateDestroyedContainerData(player, containerOwner, containerName, weapon, grid, x, y);
             }
+
+            return true;
         }
 
-        private void CheckIfEntityIsBuilding(BasePlayer player, BaseCombatEntity entity, string weapon)
+        private bool CheckIfEntityIsBuilding(BasePlayer player, BaseCombatEntity entity, string weapon)
         {
             if (entity is BuildingBlock)
             {
@@ -806,9 +810,10 @@ namespace Oxide.Plugins
                 // Create the Destroyed Building Data
                 CreateDestroyedBuildingData(player, buildingOwner, buildingName, tierIntStr, weapon, grid);
             }
+            return true;
         }
 
-        private void CheckIfEntityIsAnimal(BasePlayer player, BaseCombatEntity entity, HitInfo hitInfo, string weapon)
+        private bool CheckIfEntityIsAnimal(BasePlayer player, BaseCombatEntity entity, HitInfo hitInfo, string weapon)
         {
             if (entity is BaseAnimalNPC)
             {
@@ -845,16 +850,17 @@ namespace Oxide.Plugins
                 // Create the Animal Kill Data
                 CreateAnimalKillData(player, animal, distance, weapon);
             }
+            return true;
         }
 
-        private void CheckIfEntityIsBasePlayer(BaseCombatEntity entity)
+        private bool CheckIfEntityIsBasePlayer(BaseCombatEntity entity)
         {
             if (entity is BasePlayer)
             {
                 _Debug("Entity: BasePlayer");
 
                 // Check to see if the player is an npc
-                if (entity.IsNpc) return;
+                if (entity.IsNpc) return true;
 
                 // Get the coordinates
                 string x = entity.transform.position.x.ToString();
@@ -867,6 +873,8 @@ namespace Oxide.Plugins
                 // Create the Animal Kill Data
                 CreatePlayerDeathData((BasePlayer)entity, reason, x, y, grid);
             }
+
+            return true;
         }
 
         #endregion
