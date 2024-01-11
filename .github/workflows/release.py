@@ -41,8 +41,10 @@ def main():
 
     current_version = extract_version()
     latest_release = get_latest_release(repo)
+    print(f"Current Version: {current_version}")
+    print(f"Latest Release: {latest_release}")
 
-    if current_version and latest_release and current_version > latest_release:
+    if current_version and latest_release > latest_release:
         if create_release(repo, current_version, token):
             print("Release created successfully")
         else:
