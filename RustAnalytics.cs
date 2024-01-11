@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.22";
+        private const string _PluginVersion = "0.0.23";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _DownloadLink = "INSERT_LINK_HERE";
 
@@ -495,6 +495,17 @@ namespace Oxide.Plugins
             _cachedData["steam_id"] = player.UserIDString;
             _cachedData["type"] = type;
             _cachedData["amount"] = "1";
+
+            return _cachedData;
+        }
+
+        private Hash<string, string> GetPlayerCraftingData(BasePlayer player, string itemName, string amount)
+        {
+            ClearCachedData();
+            _cachedData["username"] = player.displayName;
+            _cachedData["steam_id"] = player.UserIDString;
+            _cachedData["item_crafted"] = itemName;
+            _cachedData["amount"] = amount;
 
             return _cachedData;
         }
@@ -990,6 +1001,25 @@ namespace Oxide.Plugins
             }
         }
 
+        #endregion
+
+        #region PlayerCraftedItems
+
+        private void OnItemCraftFinished(ItemCraftTask task, Item item, ItemCrafter crafter)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnItemCraftFinished");
+            string itemName = item.info.displayName.english;
+            string amount = item.amount.ToString();
+            BasePlayer player = crafter.owner;
+
+            _Debug($"Player Name: {player.displayName}");
+            _Debug($"Player Steam ID: {player.UserIDString}");
+            _Debug($"Item Name: {itemName}");
+            _Debug($"Amount: {amount}");
+
+            CreatePlayerCraftingData(player, itemName, amount);
+        }
 
         #endregion
 
@@ -1110,6 +1140,14 @@ namespace Oxide.Plugins
             var data = GetPlacedDeployableData(player, type);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.PlacedDeployablesRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreatePlayerCraftingData(BasePlayer player, string itemName, string amount)
+        {
+            var data = GetPlayerCraftingData(player, itemName, amount);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.CraftingRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
