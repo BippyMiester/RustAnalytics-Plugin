@@ -477,6 +477,17 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
+        private Hash<string, string> GetPlacedStructureData(BasePlayer player, string type)
+        {
+            ClearCachedData();
+            _cachedData["username"] = player.displayName;
+            _cachedData["steam_id"] = player.UserIDString;
+            _cachedData["type"] = type;
+            _cachedData["amount"] = "1";
+
+            return _cachedData;
+        }
+
         #endregion
 
         #region Harmony Helpers
@@ -918,9 +929,56 @@ namespace Oxide.Plugins
 
                 CreatePlayerKillData(attacker, victim, weapon, bodyPart, distance);
             }
-
-            return true;
         }
+
+        #endregion
+
+        #region OnEntityBuilt (PlacedBuildings, PlacedDeployables)
+
+        private void OnEntityBuilt(Planner planner, GameObject component)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnEntityBuilt");
+            string type;
+
+            // Check if the componant or the planner owner is null
+            if (component == null || planner.GetOwnerItemDefinition() == null)
+            {
+                ConsoleWarn("component or planner.GetOwnerItemDefinition() is null!");
+                return;
+            }
+            
+            // Get the player
+            BasePlayer player = planner.GetOwnerPlayer();
+
+            // Get the placed Object
+            BaseEntity placedObject = component.ToBaseEntity();
+            if (placedObject == null)
+            {
+                ConsoleWarn("placedObject is null!");
+                return;
+            }
+
+            // Check if the placed object is a BuildingBlock
+            BuildingBlock buildingBlock = placedObject as BuildingBlock;
+            if (buildingBlock?.blockDefinition != null)
+            {
+                // Placed a building block
+                _Debug("Placed Structure");
+                type = buildingBlock.blockDefinition.info.name.english;
+                _Debug($"Type: {type}");
+                CreatePlacedStructureData(player, type);
+            }
+            else if (planner.isTypeDeployable)
+            {
+                // Placed a deployable
+                _Debug("Placed Deployable");
+                type = planner.GetOwnerItemDefinition().displayName.english;
+                _Debug($"Type: {type}");
+                _Debug("INSERT INTO DATABASE: DEPLOYABLE");
+            }
+        }
+
 
         #endregion
 
@@ -1025,6 +1083,14 @@ namespace Oxide.Plugins
             var data = GetPlayerKillData(attacker, victim, weapon, bodyPart, distance);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.KillsRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreatePlacedStructureData(BasePlayer player, string type)
+        {
+            var data = GetPlacedStructureData(player, type);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.PlacedStructuresRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
