@@ -44,19 +44,21 @@ def main():
     print(f"Current Version: {current_version}")
     print(f"Latest Release: {latest_release}")
 
-    if latest_release == None:
+    # Check if no release exists and create the first release
+    if latest_release is None:
         if create_release(repo, current_version, token):
-            print("Release created successfully")
+            print("First release created successfully")
         else:
-            print("Failed to create release")
+            print("Failed to create the first release")
     else:
-        if current_version and latest_release and current_version > latest_release:
+        if current_version and current_version > latest_release:
             if create_release(repo, current_version, token):
                 print("Release created successfully")
             else:
                 print("Failed to create release")
         else:
             print("No new release needed")
+
 
 if __name__ == "__main__":
     main()
