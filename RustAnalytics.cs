@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.21";
+        private const string _PluginVersion = "0.0.22";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _DownloadLink = "INSERT_LINK_HERE";
 
@@ -478,6 +478,17 @@ namespace Oxide.Plugins
         }
 
         private Hash<string, string> GetPlacedStructureData(BasePlayer player, string type)
+        {
+            ClearCachedData();
+            _cachedData["username"] = player.displayName;
+            _cachedData["steam_id"] = player.UserIDString;
+            _cachedData["type"] = type;
+            _cachedData["amount"] = "1";
+
+            return _cachedData;
+        }
+
+        private Hash<string, string> GetPlacedDeployableData(BasePlayer player, string type)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -975,7 +986,7 @@ namespace Oxide.Plugins
                 _Debug("Placed Deployable");
                 type = planner.GetOwnerItemDefinition().displayName.english;
                 _Debug($"Type: {type}");
-                _Debug("INSERT INTO DATABASE: DEPLOYABLE");
+                CreatePlacedDeployableData(player, type);
             }
         }
 
@@ -1091,6 +1102,14 @@ namespace Oxide.Plugins
             var data = GetPlacedStructureData(player, type);
 
             webhookCoroutine = WebhookSend(data, Configuration.API.PlacedStructuresRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreatePlacedDeployableData(BasePlayer player, string type)
+        {
+            var data = GetPlacedDeployableData(player, type);
+
+            webhookCoroutine = WebhookSend(data, Configuration.API.PlacedDeployablesRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
