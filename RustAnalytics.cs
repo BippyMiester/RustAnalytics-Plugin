@@ -757,26 +757,27 @@ namespace Oxide.Plugins
                 _Debug($"Attacking Player: {player.displayName}");
                 _Debug($"Attacking Player ID: {player.UserIDString}");
 
-                // Check if the entity is a BasePlayer and the entity isn't the same as the last attacker (PlayerKill)
-                if (OnEntityDeathCheckIfEntityIsPlayerKill(player, entity, hitInfo, weapon)) return;
-
                 // Check if the entity is a Storage Container (DestroyedContainer)
-                if (OnEntityDeathCheckIfEntityIsStorage(player, entity, weapon)) return;
+                OnEntityDeathCheckIfEntityIsStorage(player, entity, weapon);
 
                 // Check if the entity is a Building Block (DestroyedBuilding)
-                if (OnEntityDeathCheckIfEntityIsBuilding(player, entity, weapon)) return;
+                OnEntityDeathCheckIfEntityIsBuilding(player, entity, weapon);
 
                 // Check if the entity is an animal (AnimalKill)
-                if (OnEntityDeathCheckIfEntityIsAnimal(player, entity, hitInfo, weapon)) return;
+                OnEntityDeathCheckIfEntityIsAnimal(player, entity, hitInfo, weapon);
+
+                // Check if the entity is a BasePlayer and the entity isn't the same as the last attacker (PlayerKill)
+                OnEntityDeathCheckIfEntityIsPlayerKill(player, entity, hitInfo, weapon);
+                
             }
             else
             {
                 // Check if the entity is a BasePlayer (PlayerDeath)
-                if (OnEntityDeathCheckIfEntityIsBasePlayer(entity)) return;
+                OnEntityDeathCheckIfEntityIsBasePlayer(entity);
             }
         }
 
-        private bool OnEntityDeathCheckIfEntityIsStorage(BasePlayer player, BaseCombatEntity entity, string weapon)
+        private void OnEntityDeathCheckIfEntityIsStorage(BasePlayer player, BaseCombatEntity entity, string weapon)
         {
             if (entity is StorageContainer)
             {
@@ -807,11 +808,9 @@ namespace Oxide.Plugins
                 // Create the Destroyed Container Data
                 CreateDestroyedContainerData(player, containerOwner, containerName, weapon, grid, x, y);
             }
-
-            return true;
         }
 
-        private bool OnEntityDeathCheckIfEntityIsBuilding(BasePlayer player, BaseCombatEntity entity, string weapon)
+        private void OnEntityDeathCheckIfEntityIsBuilding(BasePlayer player, BaseCombatEntity entity, string weapon)
         {
             if (entity is BuildingBlock)
             {
@@ -841,10 +840,9 @@ namespace Oxide.Plugins
                 // Create the Destroyed Building Data
                 CreateDestroyedBuildingData(player, buildingOwner, buildingName, tierIntStr, weapon, grid);
             }
-            return true;
         }
 
-        private bool OnEntityDeathCheckIfEntityIsAnimal(BasePlayer player, BaseCombatEntity entity, HitInfo hitInfo, string weapon)
+        private void OnEntityDeathCheckIfEntityIsAnimal(BasePlayer player, BaseCombatEntity entity, HitInfo hitInfo, string weapon)
         {
             if (entity is BaseAnimalNPC)
             {
@@ -865,17 +863,16 @@ namespace Oxide.Plugins
                 // Create the Animal Kill Data
                 CreateAnimalKillData(player, animal, distance, weapon);
             }
-            return true;
         }
 
-        private bool OnEntityDeathCheckIfEntityIsBasePlayer(BaseCombatEntity entity)
+        private void OnEntityDeathCheckIfEntityIsBasePlayer(BaseCombatEntity entity)
         {
             if (entity is BasePlayer)
             {
                 _Debug("Entity: BasePlayer");
 
                 // Check to see if the player is an npc
-                if (entity.IsNpc) return true;
+                if (entity.IsNpc) return;
 
                 // Get the coordinates
                 string x = entity.transform.position.x.ToString();
@@ -888,11 +885,9 @@ namespace Oxide.Plugins
                 // Create the Animal Kill Data
                 CreatePlayerDeathData((BasePlayer)entity, reason, x, y, grid);
             }
-
-            return true;
         }
 
-        private bool OnEntityDeathCheckIfEntityIsPlayerKill(BasePlayer player, BaseCombatEntity entity, HitInfo hitInfo, string weapon)
+        private void OnEntityDeathCheckIfEntityIsPlayerKill(BasePlayer player, BaseCombatEntity entity, HitInfo hitInfo, string weapon)
         {
             _Debug("------------------------------");
             _Debug("Method: CheckIfEntityIsPlayerKill");
@@ -906,7 +901,7 @@ namespace Oxide.Plugins
 
                 // Check if they are NPC's
                 // Also comment out this line if debugging as well
-                if (attacker.IsNpc || victim.IsNpc) return true;
+                if (attacker.IsNpc || victim.IsNpc) return;
 
                 // Get the player weapon
                 weapon = player.GetActiveItem()?.info?.displayName?.english ?? "Unknown Weapon";
