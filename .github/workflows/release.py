@@ -48,11 +48,11 @@ def create_release(repo, version, token):
     }
     response = requests.post(url, json=data, headers=headers)
     if response.status_code == 201:
-        return True
+        return True, response.json()['upload_url']
     else:
         print(f"Failed to create release: {response.status_code}")
         print(f"Response: {response.json()}")
-        return False
+        return False, None
 
 # Main execution
 def main():
@@ -65,22 +65,16 @@ def main():
     print(f"Current Version: {current_version}")
     print(f"Latest Release: {latest_release}")
 
-    # Check if no release exists and create the first release
-    if latest_release is None:
-        if create_release(repo, current_version, token):
-            print("First release created successfully")
-        else:
-            print("Failed to create the first release")
-    else:
-        if current_version and current_version > latest_release:
-            bundle_files(files_to_bundle)
-            if create_release(repo, current_version, token):
-                # Get upload URL from release creation response
-                upload_url = response.json()['upload_url'].split('{')[0]
-                if upload_release_asset(upload_url, 'release_files.zip', token):
-                    print("Release and assets uploaded successfully")
-                else:
-                    print("Failed to upload assets")
+    # Adjusted logic for release creation and asset upload
+    if latest_release is None or (current_version and current_version > latest_release):
+        bundle_files(files_to_bundle)
+        success, upload_url = create_release(repo, current_version, token)
+        if success:
+            upload_url = upload_url.split('{')[0]
+            if upload_release_asset(upload_url, 'release_files.zip', token):
+                print("Release and assets uploaded successfully")
+            else:
+                print("Failed to upload assets")
         else:
             print("Failed to create release")
 
