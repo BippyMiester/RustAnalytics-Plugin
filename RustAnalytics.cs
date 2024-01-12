@@ -32,7 +32,8 @@ namespace Oxide.Plugins
         private const string _PluginAuthor = "BippyMiester";
         private const string _PluginVersion = "0.0.23";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
-        private const string _DownloadLink = "INSERT_LINK_HERE";
+        private const string _PluginDownloadLink = "INSERT_LINK_HERE";
+        private const string _PluginWebsite = "https://rustanalytics.com/";
 
         // Plugin References
         [PluginReference]
@@ -135,7 +136,15 @@ namespace Oxide.Plugins
 
         private void Init()
         {
-            ConsoleLog($"{_PluginName} has been initialized...");
+            ConsoleLog("******************************************************");
+            ConsoleLog($"{_PluginName}");
+            ConsoleLog($"v{_PluginVersion}");
+            ConsoleLog($"Created By: {_PluginAuthor}");
+            ConsoleLog(_PluginDescription);
+            ConsoleLog($"Download Here: {_PluginDownloadLink}");
+            ConsoleLog($"Server Dashboard: {_PluginWebsite}");
+            ConsoleLog("******************************************************");
+
             LoadMessages();
         }
 
@@ -345,7 +354,7 @@ namespace Oxide.Plugins
             // Playtime Tracker
             if (!RustAnalyticsPlaytimeTracker)
             {
-                ConsoleError($"RustMetricsPlaytimeTracker is not loaded, but you have tracking enabled. Download from here: {_DownloadLink}");
+                ConsoleError($"RustMetricsPlaytimeTracker is not loaded, but you have tracking enabled. Download from here: {_PluginDownloadLink}");
                 _cachedData["online_seconds"] = "1";
                 _cachedData["afk_seconds"] = "1";
             }
