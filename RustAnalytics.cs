@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.24";
+        private const string _PluginVersion = "0.0.25";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "INSERT_LINK_HERE";
         private const string _PluginWebsite = "https://rustanalytics.com/";
