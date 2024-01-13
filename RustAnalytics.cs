@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.23";
+        private const string _PluginVersion = "0.0.24";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "INSERT_LINK_HERE";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -150,10 +150,10 @@ namespace Oxide.Plugins
 
         private void OnServerInitialized()
         {
-            //ShowSplashScreen();
             _pluginInstance = this;
             PatchHarmony();
-            //StartGlobalTimers();
+
+            StartGlobalTimers();
         }
 
         private void Loaded()
@@ -174,12 +174,12 @@ namespace Oxide.Plugins
         public void StartGlobalTimers()
         {
             // Call some functions before starting the timers so that they are immediately being collected.
-            CreateServerData();
+            UpdateServerData();
 
             ConsoleLog("Starting 10 minute timer...");
             timer.Every(600f, () =>
             {
-                CreateServerData();
+                CreateServerDataData();
             });
 
             ConsoleLog("Starting 60 second timer...");
@@ -189,7 +189,7 @@ namespace Oxide.Plugins
             });
 
             // Start the getPlayerClientDataCoroutine
-            ServerMgr.Instance.StartCoroutine(clientDataCoroutine = GetPlayerClientDataCoroutine());
+            //ServerMgr.Instance.StartCoroutine(clientDataCoroutine = GetPlayerClientDataCoroutine());
         }
 
         #region HelperFunctions
@@ -299,9 +299,10 @@ namespace Oxide.Plugins
 
         #region CachedDataHandling
 
-        private Hash<string, string> SetServerData()
+        private Hash<string, string> SetServerDataData()
         {
-            uint worldSize = World.Size / 1000;
+            _Debug("------------------------------");
+            _Debug("Method: SetServerDataData");
             double usedMemory = Math.Round((Performance.current.memoryUsageSystem * 1f) / 1024, 2);
             double maxMemory = Math.Round((UnityEngine.SystemInfo.systemMemorySize * 1f) / 1024, 2);
             double networkIn = Math.Round((Network.Net.sv.GetStat(null, Network.BaseNetwork.StatTypeLong.BytesReceived_LastSecond) * 1f) / 1024, 2);
@@ -309,36 +310,57 @@ namespace Oxide.Plugins
 
             ClearCachedData();
             _cachedData["entities"] = $"{BaseNetworkable.serverEntities.Count}";
-            _cachedData["world_seed"] = $"{World.Seed}";
-            _cachedData["world_name"] = $"{World.Name}";
             _cachedData["players_online"] = $"{BasePlayer.activePlayerList.Count}";
             _cachedData["players_max"] = $"{ConVar.Server.maxplayers}";
             _cachedData["in_game_time"] = $"{TOD_Sky.Instance.Cycle.DateTime}";
             _cachedData["server_fps"] = $"{Performance.report.frameRate}";
-            _cachedData["map_size"] = $"{worldSize}";
-            _cachedData["protocol"] = $"{Rust.Protocol.network}";
             _cachedData["used_memory"] = $"{usedMemory}";
             _cachedData["max_memory"] = $"{maxMemory}";
             _cachedData["network_in"] = $"{networkIn}";
             _cachedData["network_out"] = $"{networkOut}";
-            _cachedData["last_wiped"] = $"{SaveRestore.SaveCreatedTime}";
-            _cachedData["blueprint_last_wiped"] = $"{_saveInfo.CreationTime}";
 
             _Debug($"Server Entities: {BaseNetworkable.serverEntities.Count}");
-            _Debug($"World Seed: {World.Seed}");
-            _Debug($"World Name: {World.Name}");
             _Debug($"Players Online: {BasePlayer.activePlayerList.Count}");
             _Debug($"Max Players Online: {ConVar.Server.maxplayers}");
             _Debug($"In-Game Time: {TOD_Sky.Instance.Cycle.DateTime}");
             _Debug($"Server FPS: {Performance.report.frameRate}");
-            _Debug($"Map Size: {worldSize} km");
-            _Debug($"Rust Protocol: {Rust.Protocol.network}");
             _Debug($"Used Memory: {usedMemory} Gb");
             _Debug($"Max Memory: {maxMemory} Gb");
             _Debug($"Network In: {networkIn} kb/s");
             _Debug($"Network Out: {networkOut} kb/s");
-            _Debug($"Last Wiped: {SaveRestore.SaveCreatedTime}");
-            _Debug($"Blueprint Wipe: {_saveInfo.CreationTime.ToString()}");
+
+            return _cachedData;
+        }
+
+        private Hash<string, string> SetServerData()
+        {
+            _Debug("------------------------------");
+            _Debug("Method: SetServerData");
+            uint worldSize = World.Size / 1000;
+
+            ClearCachedData();
+            _cachedData["name"] = $"{ConVar.Server.hostname}";
+            _cachedData["ip"] = "76.250.312.450";
+            _cachedData["port"] = $"{ConVar.Server.port}";
+            _cachedData["protocol"] = $"{Rust.Protocol.network}";
+            _cachedData["world_seed"] = $"{World.Seed}";
+            _cachedData["world_name"] = $"{World.Name}";
+            _cachedData["map_size"] = $"{worldSize}";
+            _cachedData["last_wiped"] = $"{SaveRestore.SaveCreatedTime}";
+            _cachedData["blueprint_last_wiped"] = $"{_saveInfo.CreationTime}";
+            _cachedData["description"] = $"{ConVar.Server.description}";
+            
+
+            _Debug($"Server Name: {_cachedData["name"]}");
+            _Debug($"Server IP: {_cachedData["ip"]}");
+            _Debug($"Server Port: {_cachedData["port"]}");
+            _Debug($"Rust Protocol: {_cachedData["protocol"]}");
+            _Debug($"World Seed: {_cachedData["world_seed"]}");
+            _Debug($"World Name: {_cachedData["world_name"]}");
+            _Debug($"Map Size: {_cachedData["map_size"]} km");
+            _Debug($"Last Wiped: {_cachedData["last_wiped"]}");
+            _Debug($"Blueprint Wipe: {_cachedData["blueprint_last_wiped"]}");
+            _Debug($"Blueprint Wipe: {_cachedData["description"]}");
 
             return _cachedData;
         }
@@ -1044,11 +1066,26 @@ namespace Oxide.Plugins
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
-        public void CreateServerData()
+        public void CreateServerDataData()
         {
-            var data = SetServerData();
+            _Debug("------------------------------");
+            _Debug("Method: CreateServerDataData");
+            _Debug($"Webhook: {Configuration.API.ServerDataDataRoute.Create}");
+            var data = SetServerDataData();
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Create);
+            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataDataRoute.Create, "CreateServerDataData");
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        public void UpdateServerData()
+        {
+            _Debug("------------------------------");
+            _Debug("Method: UpdateServerData");
+            _Debug($"Webhook: {Configuration.API.ServerDataRoute.Update}");
+            var data = SetServerData();
+            _Debug("Test1");
+            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Update, "UpdateServerData");
+            _Debug("Test2");
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1221,8 +1258,8 @@ namespace Oxide.Plugins
             _Debug("------------------------------");
             _Debug("Method: TestConsoleCommand");
 
-            var data = SetServerData();
-            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Create);
+            var data = SetServerDataData();
+            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
             ConsoleLog("Sent");
         }
@@ -1308,13 +1345,22 @@ namespace Oxide.Plugins
                     public string Destroy { get; set; }
                 }
 
+                [JsonProperty(PropertyName = "ServerDataData")]
+                public ServerDataDataRoutes ServerDataDataRoute { get; set; }
+
+                public class ServerDataDataRoutes
+                {
+                    [JsonProperty(PropertyName = "Create")]
+                    public string Create { get; set; }
+                }
+
                 [JsonProperty(PropertyName = "ServerData")]
                 public ServerDataRoutes ServerDataRoute { get; set; }
 
                 public class ServerDataRoutes
                 {
-                    [JsonProperty(PropertyName = "Create")]
-                    public string Create { get; set; }
+                    [JsonProperty(PropertyName = "Update")]
+                    public string Update { get; set; }
                 }
 
                 [JsonProperty(PropertyName = "AnimalKills")]
@@ -1465,9 +1511,13 @@ namespace Oxide.Plugins
                         Create = "http://localhost:8000/api/v1/server/players/bans/create",
                         Destroy = "http://localhost:8000/api/v1/server/players/bans/destroy"
                     },
-                    ServerDataRoute = new ConfigData.APIOptions.ServerDataRoutes
+                    ServerDataDataRoute = new ConfigData.APIOptions.ServerDataDataRoutes
                     {
                         Create = "http://localhost:8000/api/v1/server/data/create"
+                    },
+                    ServerDataRoute = new ConfigData.APIOptions.ServerDataRoutes
+                    {
+                        Update = "http://localhost:8000/api/v1/server/update"
                     },
                     AnimalKillsRoute = new ConfigData.APIOptions.AnimalKillsRoutes
                     {
@@ -1608,8 +1658,14 @@ namespace Oxide.Plugins
             }
         }
 
-        private IEnumerator WebhookSend(Hash<string, string> data, string webhook)
+        private IEnumerator WebhookSend(Hash<string, string> data, string webhook, string methodName = null)
         {
+
+            _Debug("__________________________________");
+            if(methodName != null)
+            {
+                _Debug($"FROM METHOD: {methodName}");
+            }
             // Create New Form Data
             WWWForm formData = new WWWForm();
 
@@ -1642,21 +1698,8 @@ namespace Oxide.Plugins
             }
 
             ServerMgr.Instance.StopCoroutine(webhookCoroutine);
-        }
+            _Debug("__________________________________");
 
-        #endregion
-
-        #region SplashScreen
-
-        private void ShowSplashScreen()
-        {
-            ConsoleLog("+-+-+-+-+-+-+-+-+-+-+-+-+-+");
-            ConsoleLog("|R|u|s|t|A|n|a|l|y|t|i|c|s|");
-            ConsoleLog("+-+-+-+-+-+-+-+-+-+-+-+-+-+");
-            ConsoleLog("   |C|r|e|a|t|e|d| |B|y|   ");
-            ConsoleLog(" +-+-+-+-+-+-+-+-+-+-+-+-+ ");
-            ConsoleLog(" |B|i|p|p|y|M|i|e|s|t|e|r| ");
-            ConsoleLog(" +-+-+-+-+-+-+-+-+-+-+-+-+ ");
         }
 
         #endregion
