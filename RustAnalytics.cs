@@ -44,12 +44,15 @@ namespace Oxide.Plugins
         private SaveInfo _saveInfo = SaveInfo.Create(World.SaveFolderName + $"/player.blueprints.{Rust.Protocol.persistance}.db");
         private readonly Hash<ulong, Action<ClientPerformanceReport>> _clientPerformanceReports = new();
         private readonly CustomYieldInstruction _waitWhileYieldInstruction = new WaitWhile(() => BasePlayer.activePlayerList.Count == 0);
+        // This is where we insert the time from the servers database for the user. This is the refresh time here. Set this 60f to the value of the get request.
         private readonly YieldInstruction _waitYieldInstruction = new WaitForSeconds(60f);
+        private readonly YieldInstruction _halfWaitYieldInstruction = new WaitForSeconds(30f);
         private readonly Hash<string, string> _cachedData = new();
 
         // Coroutines
         private IEnumerator webhookCoroutine;
         private IEnumerator clientDataCoroutine;
+        private IEnumerator serverDataCoroutine;
 
         // Harmony Variables
         private HInstance _harmonyInstance;
@@ -139,6 +142,7 @@ namespace Oxide.Plugins
             ConsoleLog("******************************************************");
             ConsoleLog($"{_PluginName}");
             ConsoleLog($"v{_PluginVersion}");
+            _Debug($"Harmony ID: {HarmonyId}");
             ConsoleLog($"Created By: {_PluginAuthor}");
             ConsoleLog(_PluginDescription);
             ConsoleLog($"Download Here: {_PluginDownloadLink}");
@@ -152,8 +156,8 @@ namespace Oxide.Plugins
         {
             _pluginInstance = this;
             PatchHarmony();
-
-            StartGlobalTimers();
+            StartCoroutines();
+            UpdateServerData();
         }
 
         private void Loaded()
@@ -166,30 +170,19 @@ namespace Oxide.Plugins
             // Stop all coroutines
             if (webhookCoroutine != null) ServerMgr.Instance.StopCoroutine(webhookCoroutine);
             if (clientDataCoroutine != null) ServerMgr.Instance.StopCoroutine(clientDataCoroutine);
+            if (serverDataCoroutine != null) ServerMgr.Instance.StopCoroutine(serverDataCoroutine);
 
             UnpatchHarmony();
             _pluginInstance = null;
         }
 
-        public void StartGlobalTimers()
+        public void StartCoroutines()
         {
-            // Call some functions before starting the timers so that they are immediately being collected.
-            UpdateServerData();
-
-            ConsoleLog("Starting 10 minute timer...");
-            timer.Every(600f, () =>
-            {
-                CreateServerDataData();
-            });
-
-            ConsoleLog("Starting 60 second timer...");
-            timer.Every(60f, () =>
-            {
-
-            });
-
             // Start the getPlayerClientDataCoroutine
             //ServerMgr.Instance.StartCoroutine(clientDataCoroutine = GetPlayerClientDataCoroutine());
+
+            // Start the CreateServerDataDataCoroutine
+            ServerMgr.Instance.StartCoroutine(serverDataCoroutine = CreateServerDataDataCoroutine());
         }
 
         #region HelperFunctions
@@ -1073,7 +1066,7 @@ namespace Oxide.Plugins
             _Debug($"Webhook: {Configuration.API.ServerDataDataRoute.Create}");
             var data = SetServerDataData();
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataDataRoute.Create, "CreateServerDataData");
+            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1083,9 +1076,7 @@ namespace Oxide.Plugins
             _Debug("Method: UpdateServerData");
             _Debug($"Webhook: {Configuration.API.ServerDataRoute.Update}");
             var data = SetServerData();
-            _Debug("Test1");
-            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Update, "UpdateServerData");
-            _Debug("Test2");
+            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Update);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1604,7 +1595,7 @@ namespace Oxide.Plugins
         private IEnumerator GetPlayerClientDataCoroutine()
         {
             _Debug("------------------------------");
-            _Debug("Method: GetPlayerClientDataCoroutine");
+            _Debug("Starting GetPlayerClientData Coroutine");
 
             while (true)
             {
@@ -1622,6 +1613,23 @@ namespace Oxide.Plugins
 
                 _Debug("Waiting 60 seconds before next check of all players");
                 yield return _waitYieldInstruction;
+            }
+        }
+
+        private IEnumerator CreateServerDataDataCoroutine()
+        {
+            _Debug("------------------------------");
+            _Debug("Starting CreateServerDataData Coroutine");
+
+            while (true)
+            {
+
+                yield return _halfWaitYieldInstruction;
+
+                CreateServerDataData();
+
+                _Debug("Waiting 60 seconds to get new server data.");
+                yield return _halfWaitYieldInstruction;
             }
         }
 
@@ -1661,9 +1669,9 @@ namespace Oxide.Plugins
         private IEnumerator WebhookSend(Hash<string, string> data, string webhook, string methodName = null)
         {
 
-            _Debug("__________________________________");
             if(methodName != null)
             {
+                _Debug("WEBHOOK DEBUG!!!!");
                 _Debug($"FROM METHOD: {methodName}");
             }
             // Create New Form Data
@@ -1698,8 +1706,6 @@ namespace Oxide.Plugins
             }
 
             ServerMgr.Instance.StopCoroutine(webhookCoroutine);
-            _Debug("__________________________________");
-
         }
 
         #endregion
