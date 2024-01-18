@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.26";
+        private const string _PluginVersion = "0.0.28";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "INSERT_LINK_HERE";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -45,8 +45,8 @@ namespace Oxide.Plugins
         private readonly Hash<ulong, Action<ClientPerformanceReport>> _clientPerformanceReports = new();
         private readonly CustomYieldInstruction _waitWhileYieldInstruction = new WaitWhile(() => BasePlayer.activePlayerList.Count == 0);
         // This is where we insert the time from the servers database for the user. This is the refresh time here. Set this 60f to the value of the get request.
-        private readonly YieldInstruction _waitYieldInstruction = new WaitForSeconds(60f);
-        private readonly YieldInstruction _halfWaitYieldInstruction = new WaitForSeconds(30f);
+        private readonly YieldInstruction _waitYieldInstruction = new WaitForSeconds(16f);
+        private readonly YieldInstruction _halfWaitYieldInstruction = new WaitForSeconds(8f);
         private readonly Hash<string, string> _cachedData = new();
 
         // Coroutines
@@ -157,12 +157,11 @@ namespace Oxide.Plugins
             _pluginInstance = this;
             PatchHarmony();
             StartCoroutines();
-            UpdateServerData();
         }
 
         private void Loaded()
         {
-
+            UpdateServerData();
         }
 
         private void Unload()
@@ -333,7 +332,7 @@ namespace Oxide.Plugins
 
             ClearCachedData();
             _cachedData["name"] = $"{ConVar.Server.hostname}";
-            _cachedData["ip"] = Steamworks.SteamServer.PublicIp.ToString();
+            _cachedData["ip_address"] = Steamworks.SteamServer.PublicIp.ToString();
             _cachedData["port"] = $"{ConVar.Server.port}";
             _cachedData["protocol"] = $"{Rust.Protocol.network}";
             _cachedData["world_seed"] = $"{World.Seed}";
@@ -345,7 +344,7 @@ namespace Oxide.Plugins
             
 
             _Debug($"Server Name: {_cachedData["name"]}");
-            _Debug($"Server IP: {_cachedData["ip"]}");
+            _Debug($"Server IP: {_cachedData["ip_address"]}");
             _Debug($"Server Port: {_cachedData["port"]}");
             _Debug($"Rust Protocol: {_cachedData["protocol"]}");
             _Debug($"World Seed: {_cachedData["world_seed"]}");
