@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.37";
+        private const string _PluginVersion = "0.0.38";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -1507,64 +1507,64 @@ namespace Oxide.Plugins
                 {
                     PlayerBanDataRoute = new ConfigData.APIOptions.PlayerBanDataRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/players/bans/create",
-                        Destroy = "https://rustanalytics.com/api/v1/server/players/bans/destroy"
+                        Create = "http://localhost:8000/api/v1/server/players/bans/create",
+                        Destroy = "http://localhost:8000/api/v1/server/players/bans/destroy"
                     },
                     ServerDataDataRoute = new ConfigData.APIOptions.ServerDataDataRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/data/create"
+                        Create = "http://localhost:8000/api/v1/server/data/create"
                     },
                     ServerDataRoute = new ConfigData.APIOptions.ServerDataRoutes
                     {
-                        Update = "https://rustanalytics.com/api/v1/server/update"
+                        Update = "http://localhost:8000/api/v1/server/update"
                     },
                     AnimalKillsRoute = new ConfigData.APIOptions.AnimalKillsRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/animalkills/create"
+                        Create = "http://localhost:8000/api/v1/server/animalkills/create"
                     },
                     CraftingRoute = new ConfigData.APIOptions.CraftingRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/crafting/create"
+                        Create = "http://localhost:8000/api/v1/server/crafting/create"
                     },
                     DestroyedBuildingRoute = new ConfigData.APIOptions.DestroyedBuildingsRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/destroyedbuildings/create"
+                        Create = "http://localhost:8000/api/v1/server/destroyedbuildings/create"
                     },
                     DestroyedContainersRoute = new ConfigData.APIOptions.DestroyedContainersRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/destroyedcontainers/create"
+                        Create = "http://localhost:8000/api/v1/server/destroyedcontainers/create"
                     },
                     KillsRoute = new ConfigData.APIOptions.KillsRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/kills/create"
+                        Create = "http://localhost:8000/api/v1/server/kills/create"
                     },
                     PlacedDeployablesRoute = new ConfigData.APIOptions.PlacedDeployablesRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/placeddeployables/create"
+                        Create = "http://localhost:8000/api/v1/server/placeddeployables/create"
                     },
                     PlacedStructuresRoute = new ConfigData.APIOptions.PlacedStructuresRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/placedstructures/create"
+                        Create = "http://localhost:8000/api/v1/server/placedstructures/create"
                     },
                     PlayersConnectionRoute = new ConfigData.APIOptions.PlayersConnectionsRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/players/connection/create"
+                        Create = "http://localhost:8000/api/v1/server/players/connection/create"
                     },
                     PlayersDataRoute = new ConfigData.APIOptions.PlayersDataRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/players/data/create"
+                        Create = "http://localhost:8000/api/v1/server/players/data/create"
                     },
                     DeathsRoute = new ConfigData.APIOptions.DeathsRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/deaths/create"
+                        Create = "http://localhost:8000/api/v1/server/deaths/create"
                     },
                     GatheringRoute = new ConfigData.APIOptions.GatheringRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/gathering/create"
+                        Create = "http://localhost:8000/api/v1/server/gathering/create"
                     },
                     WeaponFireRoute = new ConfigData.APIOptions.WeaponFireRoutes
                     {
-                        Create = "https://rustanalytics.com/api/v1/server/weaponfire/create"
+                        Create = "http://localhost:8000/api/v1/server/weaponfire/create"
                     },
                 },
                 Version = Version
