@@ -23,7 +23,7 @@ def get_latest_release(repo):
 
 # Function to create a ZIP file with specific files
 def bundle_files(files):
-    with zipfile.ZipFile('release_files.zip', 'w') as zipf:
+    with zipfile.ZipFile('RustAnalytics.zip', 'w') as zipf:
         for file in files:
             zipf.write(file)
 
@@ -71,7 +71,7 @@ def main():
         success, upload_url = create_release(repo, current_version, token)
         if success:
             upload_url = upload_url.split('{')[0]
-            if upload_release_asset(upload_url, 'release_files.zip', token):
+            if upload_release_asset(upload_url, 'RustAnalytics.zip', token):
                 print("Release and assets uploaded successfully")
             else:
                 print("Failed to upload assets")
