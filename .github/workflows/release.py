@@ -3,6 +3,20 @@ import re
 import os
 import zipfile
 
+
+# Function to replace URL in RustAnalytics.cs
+def replace_url():
+    with open('RustAnalytics.cs', 'r') as file:
+        filedata = file.read()
+
+    # Replace the target string
+    filedata = filedata.replace('http://localhost:8000', 'https://rustanalytics.com')
+
+    # Write the file out again
+    with open('RustAnalytics.cs', 'w') as file:
+        file.write(filedata)
+
+        
 # Function to extract version from RustAnalytics.cs
 def extract_version():
     with open('RustAnalytics.cs', 'r') as file:
@@ -59,6 +73,8 @@ def main():
     repo = 'BippyMiester/RustAnalytics-Plugin'  # Replace with your repository
     token = os.environ['GITHUB_TOKEN']  # Ensure GITHUB_TOKEN is set in your secrets
     files_to_bundle = ['RustAnalytics.cs', 'README.md', 'LICENSE.md', 'RustAnalyticsPlaytimeTracker.cs']
+
+    replace_url() # Call the new function to replace the URL
 
     current_version = extract_version()
     latest_release = get_latest_release(repo)
