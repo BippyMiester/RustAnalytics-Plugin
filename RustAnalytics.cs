@@ -49,6 +49,8 @@ namespace Oxide.Plugins
         private readonly YieldInstruction _halfWaitYieldInstruction = new WaitForSeconds(8f);
         private readonly Hash<string, string> _cachedData = new();
 
+
+
         // Coroutines
         private IEnumerator webhookCoroutine;
         private IEnumerator clientDataCoroutine;
