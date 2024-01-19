@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.38";
+        private const string _PluginVersion = "0.0.40";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -45,8 +45,8 @@ namespace Oxide.Plugins
         private readonly Hash<ulong, Action<ClientPerformanceReport>> _clientPerformanceReports = new();
         private readonly CustomYieldInstruction _waitWhileYieldInstruction = new WaitWhile(() => BasePlayer.activePlayerList.Count == 0);
         // This is where we insert the time from the servers database for the user. This is the refresh time here. Set this 60f to the value of the get request.
-        private readonly YieldInstruction _waitYieldInstruction = new WaitForSeconds(16f);
-        private readonly YieldInstruction _halfWaitYieldInstruction = new WaitForSeconds(8f);
+        private readonly YieldInstruction _waitYieldInstruction = new WaitForSeconds(60f);
+        private readonly YieldInstruction _halfWaitYieldInstruction = new WaitForSeconds(30f);
         private readonly Hash<string, string> _cachedData = new();
 
 
