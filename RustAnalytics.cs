@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.31";
+        private const string _PluginVersion = "0.0.33";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "INSERT_LINK_HERE";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -156,6 +156,12 @@ namespace Oxide.Plugins
         {
             _pluginInstance = this;
             PatchHarmony();
+            // Check if the API key is not set. If it isn't then don't start the coroutines
+            if(Configuration.General.APIToken == "INSERT_API_KEY_HERE")
+            {
+                ConsoleError("Your API key is not set. This might be the first time you're running the plugin. Set your API key. Follow the instructions in the README.md file.");
+                return;
+            }
             StartCoroutines();
             UpdateServerData();
         }
@@ -1306,11 +1312,11 @@ namespace Oxide.Plugins
                 [JsonProperty(PropertyName = "Log To File?")]
                 public bool LogToFile { get; set; }
 
-                [JsonProperty(PropertyName = "Discord Webhook Enabled?")]
+                /*[JsonProperty(PropertyName = "Discord Webhook Enabled?")]
                 public bool DiscordWebhookEnabled { get; set; }
 
                 [JsonProperty(PropertyName = "Discord Webhook")]
-                public string DiscordWebhook { get; set; }
+                public string DiscordWebhook { get; set; }*/
 
                 [JsonProperty(PropertyName = "Server API Token")]
                 public string APIToken { get; set; }
@@ -1487,13 +1493,13 @@ namespace Oxide.Plugins
                 {
                     DebugModeEnabled = true,
                     LogToFile = true,
-                    DiscordWebhookEnabled = true,
-                    DiscordWebhook = "https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks",
-                    APIToken = "7e0c91ce-c7c1-3304-8d40-9eab41cf29f6"
+                    /*DiscordWebhookEnabled = false,
+                    DiscordWebhook = "https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks",*/
+                    APIToken = "INSERT_API_KEY_HERE"
                 },
                 Tracking = new ConfigData.TrackingOptions
                 {
-                    TrackPlayerOnlineTime = true
+                    TrackPlayerOnlineTime = false
                 },
                 API = new ConfigData.APIOptions
                 {
@@ -1633,7 +1639,7 @@ namespace Oxide.Plugins
             }
         }
 
-        private IEnumerator DiscordSendMessage(string msg)
+        /*private IEnumerator DiscordSendMessage(string msg)
         {
             if (Configuration.General.DiscordWebhookEnabled)
             {
@@ -1664,7 +1670,7 @@ namespace Oxide.Plugins
 
                 ServerMgr.Instance.StopCoroutine(webhookCoroutine);
             }
-        }
+        }*/
 
         private IEnumerator WebhookSend(Hash<string, string> data, string webhook, string methodName = null)
         {
