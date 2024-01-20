@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.40";
+        private const string _PluginVersion = "0.0.41";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -187,7 +187,7 @@ namespace Oxide.Plugins
         public void StartCoroutines()
         {
             // Start the getPlayerClientDataCoroutine
-            //ServerMgr.Instance.StartCoroutine(clientDataCoroutine = GetPlayerClientDataCoroutine());
+            // ServerMgr.Instance.StartCoroutine(clientDataCoroutine = GetPlayerClientDataCoroutine());
 
             // Start the CreateServerDataDataCoroutine
             ServerMgr.Instance.StartCoroutine(serverDataCoroutine = CreateServerDataDataCoroutine());
@@ -727,7 +727,7 @@ namespace Oxide.Plugins
 
         #endregion
 
-        /*
+        
         #region WeaponFire
         private void OnWeaponFired(BaseProjectile projectile, BasePlayer player, ItemModProjectile itemProjectile, object projectiles)
         {
@@ -805,12 +805,14 @@ namespace Oxide.Plugins
         }
 
         #endregion
-        */
+        
 
         #region OnEntityDeath (DestroyedContainer, DestroyedBuilding, AnimalKill, PlayerKills)
 
         private void OnEntityDeath(BaseCombatEntity entity, HitInfo hitInfo)
         {
+            if(entity == null) return;
+
             // Check if the last attacker was a BasePlayer
             if(entity.lastAttacker is BasePlayer && entity.lastAttacker != null)
             {

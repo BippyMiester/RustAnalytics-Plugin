@@ -41,3 +41,5 @@ Accompanied by an intuitive website, RustAnalytics presents these rich datasets 
 **LaserHydra** - DeathNotes (Get Kill Bodypart Code)
 
 **Supreme, Raul & Patrette** - Help with Harmony Patches
+
+**K1llY0u** - https://umod.org/plugins/playtime-tracker
