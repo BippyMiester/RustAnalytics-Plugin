@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.46";
+        private const string _PluginVersion = "0.0.47";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -834,34 +834,40 @@ namespace Oxide.Plugins
         {
             if(entity == null) return;
 
-            // Check if the last attacker was a BasePlayer
-            if(entity.lastAttacker is BasePlayer && entity.lastAttacker != null)
+            try
             {
-                _Debug("------------------------------");
-                _Debug("Method: OnEntityDeath");
-                string weapon = "Weapon Not Found";
+                // Check if the last attacker was a BasePlayer
+                if (entity.lastAttacker is BasePlayer && entity.lastAttacker != null)
+                {
+                    _Debug("------------------------------");
+                    _Debug("Method: OnEntityDeath");
+                    string weapon = "Weapon Not Found";
 
-                BasePlayer player = (BasePlayer)entity.lastAttacker;
-                _Debug($"Attacking Player: {player.displayName}");
-                _Debug($"Attacking Player ID: {player.UserIDString}");
+                    BasePlayer player = (BasePlayer)entity.lastAttacker;
+                    _Debug($"Attacking Player: {player.displayName}");
+                    _Debug($"Attacking Player ID: {player.UserIDString}");
 
-                // Check if the entity is a Storage Container (DestroyedContainer)
-                OnEntityDeathCheckIfEntityIsStorage(player, entity, weapon);
+                    // Check if the entity is a Storage Container (DestroyedContainer)
+                    OnEntityDeathCheckIfEntityIsStorage(player, entity, weapon);
 
-                // Check if the entity is a Building Block (DestroyedBuilding)
-                OnEntityDeathCheckIfEntityIsBuilding(player, entity, weapon);
+                    // Check if the entity is a Building Block (DestroyedBuilding)
+                    OnEntityDeathCheckIfEntityIsBuilding(player, entity, weapon);
 
-                // Check if the entity is an animal (AnimalKill)
-                OnEntityDeathCheckIfEntityIsAnimal(player, entity, hitInfo, weapon);
+                    // Check if the entity is an animal (AnimalKill)
+                    OnEntityDeathCheckIfEntityIsAnimal(player, entity, hitInfo, weapon);
 
-                // Check if the entity is a BasePlayer and the entity isn't the same as the last attacker (PlayerKill)
-                OnEntityDeathCheckIfEntityIsPlayerKill(player, entity, hitInfo, weapon);
-                
-            }
-            else
+                    // Check if the entity is a BasePlayer and the entity isn't the same as the last attacker (PlayerKill)
+                    OnEntityDeathCheckIfEntityIsPlayerKill(player, entity, hitInfo, weapon);
+
+                }
+                else
+                {
+                    // Check if the entity is a BasePlayer (PlayerDeath)
+                    OnEntityDeathCheckIfEntityIsBasePlayer(entity);
+                }
+            } catch (Exception e)
             {
-                // Check if the entity is a BasePlayer (PlayerDeath)
-                OnEntityDeathCheckIfEntityIsBasePlayer(entity);
+                //ConsoleError($"On Entity Death Exception: {e.Message}");
             }
         }
 
