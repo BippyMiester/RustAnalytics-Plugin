@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.41";
+        private const string _PluginVersion = "0.0.44";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -41,15 +41,15 @@ namespace Oxide.Plugins
 
         // Misc Variables
         private static RustAnalytics _pluginInstance;
+        private string _webhookResponse;
         private SaveInfo _saveInfo = SaveInfo.Create(World.SaveFolderName + $"/player.blueprints.{Rust.Protocol.persistance}.db");
         private readonly Hash<ulong, Action<ClientPerformanceReport>> _clientPerformanceReports = new();
         private readonly CustomYieldInstruction _waitWhileYieldInstruction = new WaitWhile(() => BasePlayer.activePlayerList.Count == 0);
         // This is where we insert the time from the servers database for the user. This is the refresh time here. Set this 60f to the value of the get request.
-        private readonly YieldInstruction _waitYieldInstruction = new WaitForSeconds(60f);
-        private readonly YieldInstruction _halfWaitYieldInstruction = new WaitForSeconds(30f);
+        private static float _RefreshRate;
+        private YieldInstruction _waitYieldInstruction;
+        private YieldInstruction _halfWaitYieldInstruction;
         private readonly Hash<string, string> _cachedData = new();
-
-
 
         // Coroutines
         private IEnumerator webhookCoroutine;
@@ -164,8 +164,21 @@ namespace Oxide.Plugins
                 ConsoleError("Your API key is not set. This might be the first time you're running the plugin. Set your API key. Follow the instructions in the README.md file.");
                 return;
             }
-            StartCoroutines();
-            UpdateServerData();
+
+            // Get the refresh rate from the API
+            getRefreshRate();
+            
+            // Wait 10 seconds for the refresh rate coroutine to finish working then start the other coroutines
+            timer.In(10f, () =>
+            {
+                _Debug($"Refresh Rate: {_RefreshRate}");
+                _Debug($"Half Refresh Rate: {(_RefreshRate / 2)}");
+                _waitYieldInstruction = new WaitForSeconds(_RefreshRate);
+                _halfWaitYieldInstruction = new WaitForSeconds((_RefreshRate / 2));
+                StartCoroutines();
+                UpdateServerData();
+            });
+            
         }
 
         private void Loaded()
@@ -186,6 +199,8 @@ namespace Oxide.Plugins
 
         public void StartCoroutines()
         {
+            _Debug("------------------------------");
+            _Debug("Method: StartCoroutines");
             // Start the getPlayerClientDataCoroutine
             // ServerMgr.Instance.StartCoroutine(clientDataCoroutine = GetPlayerClientDataCoroutine());
 
@@ -539,6 +554,12 @@ namespace Oxide.Plugins
             _cachedData["item_crafted"] = itemName;
             _cachedData["amount"] = amount;
 
+            return _cachedData;
+        }
+
+        private Hash<string, string> SetRefreshRateData()
+        {
+            ClearCachedData();
             return _cachedData;
         }
 
@@ -1065,7 +1086,7 @@ namespace Oxide.Plugins
         {
             var data = SetPlayerConnectionData(player, type);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.PlayersConnectionRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.PlayersConnectionRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1076,7 +1097,7 @@ namespace Oxide.Plugins
             _Debug($"Webhook: {Configuration.API.ServerDataDataRoute.Create}");
             var data = SetServerDataData();
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataDataRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.ServerDataDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1086,7 +1107,17 @@ namespace Oxide.Plugins
             _Debug("Method: UpdateServerData");
             _Debug($"Webhook: {Configuration.API.ServerDataRoute.Update}");
             var data = SetServerData();
-            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataRoute.Update);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.ServerDataRoute.Update);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        public void getRefreshRate()
+        {
+            _Debug("------------------------------");
+            _Debug("Method: getRefreshRate");
+            _Debug($"Webhook: {Configuration.API.ServerDataRoute.getRefreshRate}");
+            var data = SetRefreshRateData();
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.ServerDataRoute.getRefreshRate, "getRefreshRate");
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1098,7 +1129,7 @@ namespace Oxide.Plugins
 
             var data = SetPlayerClientData(clientPerformanceReport);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.PlayersDataRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.PlayersDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1106,7 +1137,7 @@ namespace Oxide.Plugins
         {
             var data = SetPlayerBannedData(name, id, address, reason);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.PlayerBanDataRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.PlayerBanDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1114,7 +1145,7 @@ namespace Oxide.Plugins
         {
             var data = SetPlayerUnbannedData(id);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.PlayerBanDataRoute.Destroy);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.PlayerBanDataRoute.Destroy);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1122,7 +1153,7 @@ namespace Oxide.Plugins
         {
             var data = SetPlayerGatherData(itemName, amount, player);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.GatheringRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.GatheringRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1130,7 +1161,7 @@ namespace Oxide.Plugins
         {
             var data = SetWeaponFireData(player, bullet, weapon);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.WeaponFireRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.WeaponFireRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1138,7 +1169,7 @@ namespace Oxide.Plugins
         {
             var data = SetDestroyedContainersData(player, owner, type, weapon, grid, x, y);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.DestroyedContainersRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.DestroyedContainersRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1146,7 +1177,7 @@ namespace Oxide.Plugins
         {
             var data = SetDestroyedContainersData(player, owner, type, tier, weapon, grid);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.DestroyedBuildingRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.DestroyedBuildingRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1154,7 +1185,7 @@ namespace Oxide.Plugins
         {
             var data = SetAnimalKillData(player, animal, distance, weapon);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.AnimalKillsRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.AnimalKillsRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1162,7 +1193,7 @@ namespace Oxide.Plugins
         {
             var data = SetPlayerDeathData(player, reason, x, y, grid);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.DeathsRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.DeathsRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1170,7 +1201,7 @@ namespace Oxide.Plugins
         {
             var data = SetPlayerKillData(attacker, victim, weapon, bodyPart, distance);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.KillsRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.KillsRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1178,7 +1209,7 @@ namespace Oxide.Plugins
         {
             var data = SetPlacedStructureData(player, type);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.PlacedStructuresRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.PlacedStructuresRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1186,7 +1217,7 @@ namespace Oxide.Plugins
         {
             var data = SetPlacedDeployableData(player, type);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.PlacedDeployablesRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.PlacedDeployablesRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1194,7 +1225,7 @@ namespace Oxide.Plugins
         {
             var data = SetPlayerCraftingData(player, itemName, amount);
 
-            webhookCoroutine = WebhookSend(data, Configuration.API.CraftingRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.CraftingRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
@@ -1260,7 +1291,7 @@ namespace Oxide.Plugins
             _Debug("Method: TestConsoleCommand");
 
             var data = SetServerDataData();
-            webhookCoroutine = WebhookSend(data, Configuration.API.ServerDataDataRoute.Create);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.ServerDataDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
             ConsoleLog("Sent");
         }
@@ -1362,6 +1393,9 @@ namespace Oxide.Plugins
                 {
                     [JsonProperty(PropertyName = "Update")]
                     public string Update { get; set; }
+
+                    [JsonProperty(PropertyName = "getRefreshRate")]
+                    public string getRefreshRate { get; set; }
                 }
 
                 [JsonProperty(PropertyName = "AnimalKills")]
@@ -1499,7 +1533,7 @@ namespace Oxide.Plugins
                     LogToFile = true,
                     /*DiscordWebhookEnabled = false,
                     DiscordWebhook = "https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks",*/
-                    APIToken = "INSERT_API_KEY_HERE"
+                    APIToken = "7e0c91ce-c7c1-3304-8d40-9eab41cf29f6"
                 },
                 Tracking = new ConfigData.TrackingOptions
                 {
@@ -1518,7 +1552,8 @@ namespace Oxide.Plugins
                     },
                     ServerDataRoute = new ConfigData.APIOptions.ServerDataRoutes
                     {
-                        Update = "http://localhost:8000/api/v1/server/update"
+                        Update = "http://localhost:8000/api/v1/server/update",
+                        getRefreshRate = "http://localhost:8000/api/v1/server/getRefreshRates"
                     },
                     AnimalKillsRoute = new ConfigData.APIOptions.AnimalKillsRoutes
                     {
@@ -1676,17 +1711,16 @@ namespace Oxide.Plugins
             }
         }*/
 
-        private IEnumerator WebhookSend(Hash<string, string> data, string webhook, string methodName = null)
+        private IEnumerator WebhookPostRequest(Hash<string, string> data, string webhook, string methodName = null)
         {
-
-            if(methodName != null)
+            if (methodName != null)
             {
                 _Debug("WEBHOOK DEBUG!!!!");
                 _Debug($"FROM METHOD: {methodName}");
             }
+
             // Create New Form Data
             WWWForm formData = new WWWForm();
-
             foreach (KeyValuePair<string, string> entry in data)
             {
                 formData.AddField(entry.Key, entry.Value);
@@ -1697,17 +1731,38 @@ namespace Oxide.Plugins
             {
                 // Execute the request
                 yield return request.SendWebRequest();
-                if ((request.isNetworkError || request.isHttpError) && request.error.Contains("Too Many Requests"))
+
+                if (request.isNetworkError || request.isHttpError)
                 {
-                    Puts("Rate Limit Exceeded... Waiting 30 seconds...");
-                    yield return new WaitForSeconds(30f);
+                    if (request.error.Contains("Too Many Requests"))
+                    {
+                        Puts("Rate Limit Exceeded... Waiting 30 seconds...");
+                        yield return new WaitForSeconds(30f);
+                    }
+                    else
+                    {
+                        _Debug("Error: " + request.error);
+                    }
                 }
                 else
                 {
-                    // Use ConsoleLog function to log the response
-                    _Debug(request.downloadHandler.text);
-                    bool APIKeyValid = request.downloadHandler.text.IndexOf("API Key Invalid", StringComparison.OrdinalIgnoreCase) >= 0;
+                    _Debug("Response: " + request.downloadHandler.text);
 
+                    // Update _refreshRate if methodName is "getRefreshRate"
+                    if (methodName == "getRefreshRate")
+                    {
+                        if (float.TryParse(request.downloadHandler.text, out float newRefreshRate))
+                        {
+                            _RefreshRate = newRefreshRate;
+                            _Debug("Refresh Rate Updated: " + _RefreshRate);
+                        }
+                        else
+                        {
+                            _Debug("Failed to parse refresh rate from response.");
+                        }
+                    }
+
+                    bool APIKeyValid = request.downloadHandler.text.IndexOf("API Key Invalid", StringComparison.OrdinalIgnoreCase) >= 0;
                     if (APIKeyValid)
                     {
                         ConsoleError("Server API Key Invalid. Check your API key and try again.");
