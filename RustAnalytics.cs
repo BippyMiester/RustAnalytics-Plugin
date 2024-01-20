@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.45";
+        private const string _PluginVersion = "0.0.46";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -1673,7 +1673,7 @@ namespace Oxide.Plugins
 
                 CreateServerDataData();
 
-                _Debug("Waiting 60 seconds to get new server data.");
+                _Debug($"Waiting {_RefreshRate} seconds to get new server data.");
                 yield return _halfWaitYieldInstruction;
             }
         }
@@ -1736,8 +1736,8 @@ namespace Oxide.Plugins
                 {
                     if (request.error.Contains("Too Many Requests"))
                     {
-                        Puts("Rate Limit Exceeded... Waiting 30 seconds...");
-                        yield return new WaitForSeconds(30f);
+                        Puts($"Rate Limit Exceeded... Waiting {_RefreshRate} seconds...");
+                        yield return new WaitForSeconds(_RefreshRate);
                     }
                     else
                     {
