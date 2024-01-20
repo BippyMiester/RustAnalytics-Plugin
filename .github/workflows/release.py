@@ -16,6 +16,18 @@ def replace_url():
     with open('RustAnalytics.cs', 'w') as file:
         file.write(filedata)
 
+# Function to replace URL in RustAnalytics.cs
+def replace_API_key():
+    with open('RustAnalytics.cs', 'r') as file:
+        filedata = file.read()
+
+    # Replace the target string
+    filedata = filedata.replace('7e0c91ce-c7c1-3304-8d40-9eab41cf29f6', 'INSERT_API_KEY_HERE')
+
+    # Write the file out again
+    with open('RustAnalytics.cs', 'w') as file:
+        file.write(filedata)
+
         
 # Function to extract version from RustAnalytics.cs
 def extract_version():
@@ -75,6 +87,7 @@ def main():
     files_to_bundle = ['RustAnalytics.cs', 'README.md', 'LICENSE.md', 'RustAnalyticsPlaytimeTracker.cs']
 
     replace_url() # Call the new function to replace the URL
+    replace_API_key()
 
     current_version = extract_version()
     latest_release = get_latest_release(repo)
