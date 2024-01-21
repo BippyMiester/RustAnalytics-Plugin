@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.54";
+        private const string _PluginVersion = "0.0.55";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -508,7 +508,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> SetPlayerDeathData(BasePlayer player, string reason, string x, string y, string grid)
+        private Hash<string, string> SetPlayerDeathData(BasePlayer player, string reason, string x, string y, string z, string grid)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -516,6 +516,7 @@ namespace Oxide.Plugins
             _cachedData["cause"] = reason;
             _cachedData["x"] = x;
             _cachedData["y"] = y;
+            _cachedData["z"] = z;
             _cachedData["grid"] = grid;
 
             return _cachedData;
@@ -978,20 +979,27 @@ namespace Oxide.Plugins
             if (entity is BasePlayer player)
             {
                 _Debug("Entity: BasePlayer");
-
+                _Debug($"Is Steam ID: {player.userID.IsSteamId().ToString()}");
                 // Check to see if the player is an npc
-                if (entity.IsNpc || player.userID.IsSteamId()) return;
+                if (entity.IsNpc || !player.userID.IsSteamId()) return;
 
                 // Get the coordinates
                 string x = entity.transform.position.x.ToString();
                 string y = entity.transform.position.y.ToString();
+                string z = entity.transform.position.z.ToString();
                 string grid = GetGridFromPosition(entity.transform.position);
+
+                _Debug($"X Coordinate: {x}");
+                _Debug($"Y Coordinate: {y}");
+                _Debug($"Z Coordinate: {z}");
+                _Debug($"Teleport Command: teleportpos ({x},{y},{z})");
+                _Debug($"Grid: {grid}");
 
                 // Get the reason for the death
                 string reason = entity.lastDamage.ToString();
 
                 // Create the Animal Kill Data
-                CreatePlayerDeathData((BasePlayer)entity, reason, x, y, grid);
+                CreatePlayerDeathData((BasePlayer)entity, reason, x, y, z, grid);
             }
         }
 
@@ -1218,9 +1226,9 @@ namespace Oxide.Plugins
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
-        private void CreatePlayerDeathData(BasePlayer player, string reason, string x, string y, string grid)
+        private void CreatePlayerDeathData(BasePlayer player, string reason, string x, string y, string z,string grid)
         {
-            var data = SetPlayerDeathData(player, reason, x, y, grid);
+            var data = SetPlayerDeathData(player, reason, x, y, z, grid);
 
             webhookCoroutine = WebhookPostRequest(data, Configuration.API.DeathsRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
