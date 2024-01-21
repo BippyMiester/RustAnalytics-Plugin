@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.49";
+        private const string _PluginVersion = "0.0.50";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -1544,7 +1544,7 @@ namespace Oxide.Plugins
             {
                 General = new ConfigData.GeneralOptions
                 {
-                    DebugModeEnabled = true,
+                    DebugModeEnabled = false,
                     LogToFile = true,
                     /*DiscordWebhookEnabled = false,
                     DiscordWebhook = "https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks",*/
