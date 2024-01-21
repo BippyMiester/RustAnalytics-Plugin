@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.47";
+        private const string _PluginVersion = "0.0.48";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -961,12 +961,12 @@ namespace Oxide.Plugins
 
         private void OnEntityDeathCheckIfEntityIsBasePlayer(BaseCombatEntity entity)
         {
-            if (entity is BasePlayer)
+            if (entity is BasePlayer player)
             {
                 _Debug("Entity: BasePlayer");
 
                 // Check to see if the player is an npc
-                if (entity.IsNpc) return;
+                if (entity.IsNpc || player.userID.IsSteamId()) return;
 
                 // Get the coordinates
                 string x = entity.transform.position.x.ToString();
