@@ -1,4 +1,7 @@
-![Rust Analytics Banner](https://i.imgur.com/pAcx4u5.png)
+<p align="center">
+   <img src="https://i.imgur.com/pAcx4u5.png" />
+</p>
+
 
 ## Things to Note
 
