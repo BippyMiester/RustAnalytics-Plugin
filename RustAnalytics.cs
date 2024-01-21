@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.56";
+        private const string _PluginVersion = "0.0.57";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -467,7 +467,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> SetDestroyedContainersData(BasePlayer player, string owner, string type, string weapon, string grid, string x, string y)
+        private Hash<string, string> SetDestroyedContainersData(BasePlayer player, string owner, string type, string weapon, string grid, string x, string y, string z)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -478,6 +478,7 @@ namespace Oxide.Plugins
             _cachedData["grid"] = grid;
             _cachedData["x"] = x;
             _cachedData["y"] = y;
+            _cachedData["z"] = z;
 
             return _cachedData;
         }
@@ -907,10 +908,13 @@ namespace Oxide.Plugins
                 // Get the container coordinates and grid
                 string x = container.transform.position.x.ToString();
                 string y = container.transform.position.y.ToString();
+                string z = container.transform.position.z.ToString();
                 string grid = GetGridFromPosition(container.transform.position);
 
                 _Debug($"X Coordinate: {x}");
                 _Debug($"Y Coordinate: {y}");
+                _Debug($"Z Coordinate: {z}");
+                _Debug($"Teleport Command: teleportpos ({x},{y},{z})");
                 _Debug($"Grid: {grid}");
 
                 // Get the container Owner
@@ -918,7 +922,7 @@ namespace Oxide.Plugins
                 _Debug($"Container Owner: {containerOwner}");
 
                 // Create the Destroyed Container Data
-                CreateDestroyedContainerData(player, containerOwner, containerName, weapon, grid, x, y);
+                CreateDestroyedContainerData(player, containerOwner, containerName, weapon, grid, x, y, z);
             }
         }
 
@@ -1213,9 +1217,9 @@ namespace Oxide.Plugins
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
-        private void CreateDestroyedContainerData(BasePlayer player, string owner, string type, string weapon, string grid, string x, string y)
+        private void CreateDestroyedContainerData(BasePlayer player, string owner, string type, string weapon, string grid, string x, string y, string z)
         {
-            var data = SetDestroyedContainersData(player, owner, type, weapon, grid, x, y);
+            var data = SetDestroyedContainersData(player, owner, type, weapon, grid, x, y, z);
 
             webhookCoroutine = WebhookPostRequest(data, Configuration.API.DestroyedContainersRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
