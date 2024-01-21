@@ -1,5 +1,6 @@
 <p align="center">
    <img src="https://i.imgur.com/pAcx4u5.png" />
+   <a href="https://discord.rustanalytics.com/" target="_blank"><img src="https://i.imgur.com/1CzZErG.png"/></a>
 </p>
 
 
