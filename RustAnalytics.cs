@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.53";
+        private const string _PluginVersion = "0.0.54";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -534,7 +534,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> SetPlacedStructureData(BasePlayer player, string type, string x, string y, string grid)
+        private Hash<string, string> SetPlacedStructureData(BasePlayer player, string type, string x, string y, string z, string grid)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -542,6 +542,7 @@ namespace Oxide.Plugins
             _cachedData["type"] = type;
             _cachedData["x"] = x;
             _cachedData["y"] = y;
+            _cachedData["z"] = z;
             _cachedData["grid"] = grid;
             _cachedData["amount"] = "1";
 
@@ -1064,12 +1065,15 @@ namespace Oxide.Plugins
                 type = buildingBlock.blockDefinition.info.name.english;
                 string x = buildingBlock.transform.position.x.ToString();
                 string y = buildingBlock.transform.position.y.ToString();
+                string z = buildingBlock.transform.position.z.ToString();
                 string grid = GetGridFromPosition(buildingBlock.transform.position);
                 _Debug($"Type: {type}");
                 _Debug($"X Coordinate: {x}");
                 _Debug($"Y Coordinate: {y}");
+                _Debug($"Z Coordinate: {z}");
+                _Debug($"Teleport Command: teleportpos ({x},{y},{z})");
                 _Debug($"Grid: {grid}");
-                CreatePlacedStructureData(player, type, x, y, grid);
+                CreatePlacedStructureData(player, type, x, y, z, grid);
             }
             else if (planner.isTypeDeployable)
             {
@@ -1230,9 +1234,9 @@ namespace Oxide.Plugins
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
-        private void CreatePlacedStructureData(BasePlayer player, string type, string x, string y, string grid)
+        private void CreatePlacedStructureData(BasePlayer player, string type, string x, string y, string z, string grid)
         {
-            var data = SetPlacedStructureData(player, type, x ,y, grid);
+            var data = SetPlacedStructureData(player, type, x ,y, z, grid);
 
             webhookCoroutine = WebhookPostRequest(data, Configuration.API.PlacedStructuresRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
