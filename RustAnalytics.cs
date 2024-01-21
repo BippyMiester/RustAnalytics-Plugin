@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.50";
+        private const string _PluginVersion = "0.0.51";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -374,8 +374,8 @@ namespace Oxide.Plugins
             _cachedData["last_wiped"] = $"{SaveRestore.SaveCreatedTime}";
             _cachedData["blueprint_last_wiped"] = $"{_saveInfo.CreationTime}";
             _cachedData["description"] = $"{ConVar.Server.description}";
+            _cachedData["tags"] = $"{Steamworks.SteamServer.GameTags}";
             
-
             _Debug($"Server Name: {_cachedData["name"]}");
             _Debug($"Server IP: {_cachedData["ip_address"]}");
             _Debug($"Server Port: {_cachedData["port"]}");
@@ -385,7 +385,8 @@ namespace Oxide.Plugins
             _Debug($"Map Size: {_cachedData["map_size"]} km");
             _Debug($"Last Wiped: {_cachedData["last_wiped"]}");
             _Debug($"Blueprint Wipe: {_cachedData["blueprint_last_wiped"]}");
-            _Debug($"Blueprint Wipe: {_cachedData["description"]}");
+            _Debug($"Description: {_cachedData["description"]}");
+            _Debug($"Game Tags: {_cachedData["tags"]}");
 
             return _cachedData;
         }
