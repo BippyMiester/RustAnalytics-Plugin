@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.51";
+        private const string _PluginVersion = "0.0.53";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -534,12 +534,15 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> SetPlacedStructureData(BasePlayer player, string type)
+        private Hash<string, string> SetPlacedStructureData(BasePlayer player, string type, string x, string y, string grid)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
             _cachedData["steam_id"] = player.UserIDString;
             _cachedData["type"] = type;
+            _cachedData["x"] = x;
+            _cachedData["y"] = y;
+            _cachedData["grid"] = grid;
             _cachedData["amount"] = "1";
 
             return _cachedData;
@@ -1059,8 +1062,14 @@ namespace Oxide.Plugins
                 // Placed a building block
                 _Debug("Placed Structure");
                 type = buildingBlock.blockDefinition.info.name.english;
+                string x = buildingBlock.transform.position.x.ToString();
+                string y = buildingBlock.transform.position.y.ToString();
+                string grid = GetGridFromPosition(buildingBlock.transform.position);
                 _Debug($"Type: {type}");
-                CreatePlacedStructureData(player, type);
+                _Debug($"X Coordinate: {x}");
+                _Debug($"Y Coordinate: {y}");
+                _Debug($"Grid: {grid}");
+                CreatePlacedStructureData(player, type, x, y, grid);
             }
             else if (planner.isTypeDeployable)
             {
@@ -1221,9 +1230,9 @@ namespace Oxide.Plugins
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
-        private void CreatePlacedStructureData(BasePlayer player, string type)
+        private void CreatePlacedStructureData(BasePlayer player, string type, string x, string y, string grid)
         {
-            var data = SetPlacedStructureData(player, type);
+            var data = SetPlacedStructureData(player, type, x ,y, grid);
 
             webhookCoroutine = WebhookPostRequest(data, Configuration.API.PlacedStructuresRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1630,7 +1639,7 @@ namespace Oxide.Plugins
         {
             ConsoleWarn("Config update detected! Updating config values...");
 
-            if (Configuration.Version < new VersionNumber(0, 2, 0))
+            if (Configuration.Version < new VersionNumber(0, 0, 49))
                 Configuration = GetBaseConfig();
 
             Configuration.Version = Version;
