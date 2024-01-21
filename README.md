@@ -49,3 +49,27 @@ Accompanied by an intuitive website, RustAnalytics presents these rich datasets 
 **Supreme, Raul & Patrette** - Help with Harmony Patches
 
 **K1llY0u** - https://umod.org/plugins/playtime-tracker
+
+# Attention Server Owners
+
+In compliance with the California Consumer Privacy Act (CCPA) and the European Union’s General Data Protection Regulation (GDPR), we are committed to protecting the privacy rights of our users.
+
+If you receive a request from any user to delete their personal data, it is imperative to take immediate action in accordance with these laws. Please adhere to the following procedure:
+
+**Open a Ticket**: Immediately open a ticket in the #create-a-ticket channel. Join our discord here: https://discord.rustanalytics.com/
+
+**Request Data Deletion**: Clearly state that the ticket is for a user data deletion request.
+
+**Provide Necessary Details**: Include any relevant information that will assist in the prompt and accurate processing of the data deletion. This will include the steam ID of the player, the username of the player, and any and all IP addresses that the player has connected to your server with.
+
+**Why This Matters**:
+
+**CCPA Compliance**: Under the California Consumer Privacy Act, consumers have the right to request the deletion of their personal data held by a business. Non-compliance can result in legal actions and penalties.
+https://oag.ca.gov/privacy/ccpa
+
+**GDPR Compliance**: The General Data Protection Regulation grants individuals in the EU the right to have their personal data erased under certain conditions. Failure to comply can lead to significant fines.
+https://ec.europa.eu/info/law/law-topic/data-protection/data-protection-eu_en
+
+As server owners, it is crucial to understand and respect these legal requirements. Prompt response to these requests not only ensures compliance with these laws but also demonstrates our commitment to user privacy and data protection.
+
+Thank you for your cooperation and diligence in maintaining a legally compliant and user-respecting environment.
