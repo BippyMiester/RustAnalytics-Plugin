@@ -214,6 +214,7 @@ namespace Oxide.Plugins
         {
             _cachedData.Clear();
             _cachedData["api_key"] = Configuration.General.APIToken;
+            _cachedData["version"] = _PluginVersion;
         }
 
         private void GetPlayerPerformance(BasePlayer player, Action<ClientPerformanceReport> callback)
