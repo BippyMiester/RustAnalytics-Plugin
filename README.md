@@ -1,3 +1,5 @@
+![Rust Analytics Banner](https://i.imgur.com/pAcx4u5.png)
+
 ## Things to Note
 
 This plugin and website are in Beta Testing Phase. The reason for this is because I'm testing the plugins performance and I can only test so much being one guy. There's a ton of data being collected with the plugin, and I want to ensure that there isn't a huge degradation of your performance. So any feedback will help me get this plugin out of beta faster.
