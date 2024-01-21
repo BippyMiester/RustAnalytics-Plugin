@@ -30,7 +30,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.48";
+        private const string _PluginVersion = "0.0.49";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -50,6 +50,7 @@ namespace Oxide.Plugins
         private YieldInstruction _waitYieldInstruction;
         private YieldInstruction _halfWaitYieldInstruction;
         private readonly Hash<string, string> _cachedData = new();
+        private bool _versionCheck = true;
 
         // Coroutines
         private IEnumerator webhookCoroutine;
@@ -165,19 +166,26 @@ namespace Oxide.Plugins
                 return;
             }
 
+            _Debug($"Initializing version check: {_versionCheck}");
             // Get the refresh rate from the API
             getRefreshRate();
-            
+
             // Wait 10 seconds for the refresh rate coroutine to finish working then start the other coroutines
             timer.In(10f, () =>
             {
-                _Debug($"Refresh Rate: {_RefreshRate}");
-                _Debug($"Half Refresh Rate: {(_RefreshRate / 2)}");
-                _waitYieldInstruction = new WaitForSeconds(_RefreshRate);
-                _halfWaitYieldInstruction = new WaitForSeconds((_RefreshRate / 2));
-                StartCoroutines();
-                UpdateServerData();
+                _Debug($"Current Version Check Value: {_versionCheck}");
+                if (_versionCheck)
+                {
+                    _Debug($"Refresh Rate: {_RefreshRate}");
+                    _Debug($"Half Refresh Rate: {(_RefreshRate / 2)}");
+                    _waitYieldInstruction = new WaitForSeconds(_RefreshRate);
+                    _halfWaitYieldInstruction = new WaitForSeconds((_RefreshRate / 2));
+                    StartCoroutines();
+                    UpdateServerData();
+                }
             });
+
+            
             
         }
 
@@ -1745,6 +1753,10 @@ namespace Oxide.Plugins
                     {
                         Puts($"Rate Limit Exceeded... Waiting {_RefreshRate} seconds...");
                         yield return new WaitForSeconds(_RefreshRate);
+                    }
+                    else if (request.responseCode == 426) {
+                        ConsoleError("RA_PLUGIN_OUTDATED: Your plugin is outdated. Please update your plugin. Download from here: https://codefling.com/plugins/rustanalytics");
+                        _versionCheck = false;
                     }
                     else
                     {
