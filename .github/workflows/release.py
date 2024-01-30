@@ -120,21 +120,21 @@ def create_release(repo, version, token, md5_checksum, sha1_checksum, sha256_che
 
 # Main execution
 def main():
+
     repo = 'BippyMiester/RustAnalytics-Plugin'  # Replace with your repository
     token = os.environ['GITHUB_TOKEN']  # Ensure GITHUB_TOKEN is set in your secrets
     files_to_bundle = ['RustAnalytics.cs', 'README.md', 'LICENSE.md', 'RustAnalyticsPlaytimeTracker.cs']
     md5_checksum = calculate_md5('RustAnalytics.cs')
     sha1_checksum = calculate_sha1('RustAnalytics.cs')
     sha256_checksum = calculate_sha256('RustAnalytics.cs')
-    commit_messages = get_commit_messages_since_last_release(repo, latest_release, token)
-
-    replace_url() # Call the new function to replace the URL
-    replace_API_key()
-
     current_version = extract_version()
     latest_release = get_latest_release(repo)
     print(f"Current Version: {current_version}")
     print(f"Latest Release: {latest_release}")
+    commit_messages = get_commit_messages_since_last_release(repo, latest_release, token)
+
+    replace_url() # Call the new function to replace the URL
+    replace_API_key()
 
     # Adjusted logic for release creation and asset upload
     if latest_release is None or (current_version and current_version > latest_release):
