@@ -4,6 +4,20 @@ import os
 import zipfile
 import hashlib
 
+# Get commit messages since last release
+def get_commit_messages_since_last_release(repo, last_release_tag, token):
+    url = f"https://api.github.com/repos/{repo}/commits"
+    headers = {'Authorization': f'token {token}'}
+    params = {'sha': 'main', 'since': last_release_tag}  # Adjust 'sha' if using a different branch
+    response = requests.get(url, headers=headers, params=params)
+
+    if response.status_code == 200:
+        commits = response.json()
+        return [commit['commit']['message'] for commit in commits]
+    else:
+        print(f"Failed to fetch commits: {response.status_code}")
+        return []
+
 # Get MD5 hash of file
 def calculate_md5(file_path):
     with open(file_path, 'rb') as file:
@@ -77,10 +91,15 @@ def upload_release_asset(upload_url, file_path, token):
         return response.status_code == 201
 
 # Function to create a new release
-def create_release(repo, version, token, md5_checksum, sha1_checksum, sha256_checksum):
+def create_release(repo, version, token, md5_checksum, sha1_checksum, sha256_checksum, commit_messages):
+    commit_messages_str = '\n'.join(f"- {msg}" for msg in commit_messages)
     url = f"https://api.github.com/repos/{repo}/releases"
     headers = {'Authorization': f'token {token}'}
     body = (f'Release of version {version}\n\n'
+            f'\n\n'
+            f'Commits since last release:\n{commit_messages_str}'
+            f'\n\n'
+            f'Checksums of RustAnalytics.cs\n'
             f'MD5: {md5_checksum}\n'
             f'SHA-1: {sha1_checksum}\n'
             f'SHA-256: {sha256_checksum}')
@@ -107,7 +126,8 @@ def main():
     md5_checksum = calculate_md5('RustAnalytics.cs')
     sha1_checksum = calculate_sha1('RustAnalytics.cs')
     sha256_checksum = calculate_sha256('RustAnalytics.cs')
-    
+    commit_messages = get_commit_messages_since_last_release(repo, latest_release, token)
+
     replace_url() # Call the new function to replace the URL
     replace_API_key()
 
@@ -119,7 +139,7 @@ def main():
     # Adjusted logic for release creation and asset upload
     if latest_release is None or (current_version and current_version > latest_release):
         bundle_files(files_to_bundle)
-        success, upload_url = create_release(repo, current_version, token, md5_checksum, sha1_checksum, sha256_checksum)
+        success, upload_url = create_release(repo, current_version, token, md5_checksum, sha1_checksum, sha256_checksum, commit_messages)
         if success:
             upload_url = upload_url.split('{')[0]
             if upload_release_asset(upload_url, 'RustAnalytics.zip', token):
