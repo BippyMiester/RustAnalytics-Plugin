@@ -6,9 +6,20 @@ import hashlib
 
 # Get commit messages since last release
 def get_commit_messages_since_last_release(repo, last_release_tag, token):
-    url = f"https://api.github.com/repos/{repo}/commits"
+    # First, get the date of the last release
+    release_url = f"https://api.github.com/repos/{repo}/releases/tags/{last_release_tag}"
     headers = {'Authorization': f'token {token}'}
-    params = {'sha': 'main', 'since': last_release_tag}  # Adjust 'sha' if using a different branch
+    response = requests.get(release_url, headers=headers)
+
+    if response.status_code != 200:
+        print(f"Failed to fetch release date: {response.status_code}")
+        return []
+
+    last_release_date = response.json()['published_at']
+
+    # Now, fetch the commits since that date
+    url = f"https://api.github.com/repos/{repo}/commits"
+    params = {'sha': 'main', 'since': last_release_date}
     response = requests.get(url, headers=headers, params=params)
 
     if response.status_code == 200:
@@ -17,6 +28,7 @@ def get_commit_messages_since_last_release(repo, last_release_tag, token):
     else:
         print(f"Failed to fetch commits: {response.status_code}")
         return []
+
 
 # Get MD5 hash of file
 def calculate_md5(file_path):
