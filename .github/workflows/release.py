@@ -2,7 +2,22 @@ import requests
 import re
 import os
 import zipfile
+import hashlib
 
+# Get MD5 hash of file
+def calculate_md5(file_path):
+    with open(file_path, 'rb') as file:
+        return hashlib.md5(file.read()).hexdigest()
+
+# Get SHA-1 hash of file
+def calculate_sha1(file_path):
+    with open(file_path, 'rb') as file:
+        return hashlib.sha1(file.read()).hexdigest()
+
+# Get SHA-256 hash of file
+def calculate_sha256(file_path):
+    with open(file_path, 'rb') as file:
+        return hashlib.sha256(file.read()).hexdigest()
 
 # Function to replace URL in RustAnalytics.cs
 def replace_url():
@@ -16,7 +31,7 @@ def replace_url():
     with open('RustAnalytics.cs', 'w') as file:
         file.write(filedata)
 
-# Function to replace URL in RustAnalytics.cs
+# Function to replace default local dev environment api key in RustAnalytics.cs
 def replace_API_key():
     with open('RustAnalytics.cs', 'r') as file:
         filedata = file.read()
@@ -62,13 +77,17 @@ def upload_release_asset(upload_url, file_path, token):
         return response.status_code == 201
 
 # Function to create a new release
-def create_release(repo, version, token):
+def create_release(repo, version, token, md5_checksum, sha1_checksum, sha256_checksum):
     url = f"https://api.github.com/repos/{repo}/releases"
     headers = {'Authorization': f'token {token}'}
+    body = (f'Release of version {version}\n\n'
+            f'MD5: {md5_checksum}\n'
+            f'SHA-1: {sha1_checksum}\n'
+            f'SHA-256: {sha256_checksum}')
     data = {
         'tag_name': version,
         'name': version,
-        'body': f'Release of version {version}',
+        'body': body,
         'draft': False,
         'prerelease': False
     }
@@ -85,7 +104,10 @@ def main():
     repo = 'BippyMiester/RustAnalytics-Plugin'  # Replace with your repository
     token = os.environ['GITHUB_TOKEN']  # Ensure GITHUB_TOKEN is set in your secrets
     files_to_bundle = ['RustAnalytics.cs', 'README.md', 'LICENSE.md', 'RustAnalyticsPlaytimeTracker.cs']
-
+    md5_checksum = calculate_md5('RustAnalytics.cs')
+    sha1_checksum = calculate_sha1('RustAnalytics.cs')
+    sha256_checksum = calculate_sha256('RustAnalytics.cs')
+    
     replace_url() # Call the new function to replace the URL
     replace_API_key()
 
@@ -97,7 +119,7 @@ def main():
     # Adjusted logic for release creation and asset upload
     if latest_release is None or (current_version and current_version > latest_release):
         bundle_files(files_to_bundle)
-        success, upload_url = create_release(repo, current_version, token)
+        success, upload_url = create_release(repo, current_version, token, md5_checksum, sha1_checksum, sha256_checksum)
         if success:
             upload_url = upload_url.split('{')[0]
             if upload_release_asset(upload_url, 'RustAnalytics.zip', token):
