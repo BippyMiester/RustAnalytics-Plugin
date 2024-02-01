@@ -554,13 +554,17 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> SetPlacedDeployableData(BasePlayer player, string type)
+        private Hash<string, string> SetPlacedDeployableData(BasePlayer player, string type, string x, string y, string z, string grid)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
             _cachedData["steam_id"] = player.UserIDString;
             _cachedData["type"] = type;
             _cachedData["amount"] = "1";
+            _cachedData["x"] = x;
+            _cachedData["y"] = y;
+            _cachedData["z"] = z;
+            _cachedData["grid"] = grid;
 
             return _cachedData;
         }
@@ -1104,7 +1108,17 @@ namespace Oxide.Plugins
                 _Debug("Placed Deployable");
                 type = planner.GetOwnerItemDefinition().displayName.english;
                 _Debug($"Type: {type}");
-                CreatePlacedDeployableData(player, type);
+                string x = planner.transform.position.x.ToString();
+                string y = planner.transform.position.y.ToString();
+                string z = planner.transform.position.z.ToString();
+                string grid = GetGridFromPosition(planner.transform.position);
+                _Debug($"Type: {type}");
+                _Debug($"X Coordinate: {x}");
+                _Debug($"Y Coordinate: {y}");
+                _Debug($"Z Coordinate: {z}");
+                _Debug($"Teleport Command: teleportpos ({x},{y},{z})");
+                _Debug($"Grid: {grid}");
+                CreatePlacedDeployableData(player, type, x, y, z, grid);
             }
         }
 
@@ -1265,9 +1279,9 @@ namespace Oxide.Plugins
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
-        private void CreatePlacedDeployableData(BasePlayer player, string type)
+        private void CreatePlacedDeployableData(BasePlayer player, string type, string x, string y, string z, string grid)
         {
-            var data = SetPlacedDeployableData(player, type);
+            var data = SetPlacedDeployableData(player, type, x, y, z, grid);
 
             webhookCoroutine = WebhookPostRequest(data, Configuration.API.PlacedDeployablesRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
