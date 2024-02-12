@@ -32,6 +32,10 @@ Elevate your Rust gaming experience with "RustAnalytics", the ultimate plugin fo
 
 Accompanied by an intuitive website, RustAnalytics presents these rich datasets in an easily digestible format, allowing for quick analysis and decision-making. Whether you're looking to enhance server management, improve player experience, or simply dive into the fascinating data of your Rust server, RustAnalytics is your go-to solution.
 
+## Commands
+
+`ra.uploadbans` - Uploads all previously stored bans to the API.
+
 ## Installation Instructions
 
 1. Go to https://rustanalytics.com/
