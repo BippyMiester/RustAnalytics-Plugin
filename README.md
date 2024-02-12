@@ -14,7 +14,7 @@ Join my Discord server! I constantly update both the plugin and the website, and
 
 ## Description
 
-Elevate your Rust gaming experience with "RustAnalytics", the ultimate plugin for in-depth server and player analytics. Exclusively available on CodeFling.com, this powerful tool is designed for server administrators and players who seek a detailed understanding of in-game activities and performance.
+Elevate your Rust gaming experience with "RustAnalytics", the ultimate plugin for in-depth server and player analytics. This powerful tool is designed for server administrators and players who seek a detailed understanding of in-game activities and performance.
 
 **Key Features:**
 
