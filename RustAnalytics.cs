@@ -11,6 +11,8 @@ using Oxide.Core.Libraries.Covalence;
 using Oxide.Core.Plugins;
 using UnityEngine;
 using UnityEngine.Networking;
+using System.Drawing;
+using System.Linq;
 //Reference: 0Harmony
 #if CARBON
     using HarmonyLib;
@@ -30,7 +32,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.62";
+        private const string _PluginVersion = "0.0.63";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -40,6 +42,7 @@ namespace Oxide.Plugins
         Plugin RustAnalyticsPlaytimeTracker;
 
         // Misc Variables
+        private VersionNumber _requiredVersion = new VersionNumber(0, 0, 63);
         private static RustAnalytics _pluginInstance;
         private string _webhookResponse;
         private SaveInfo _saveInfo = SaveInfo.Create(World.SaveFolderName + $"/player.blueprints.{Rust.Protocol.persistance}.db");
@@ -47,6 +50,7 @@ namespace Oxide.Plugins
         private readonly CustomYieldInstruction _waitWhileYieldInstruction = new WaitWhile(() => BasePlayer.activePlayerList.Count == 0);
         // This is where we insert the time from the servers database for the user. This is the refresh time here. Set this 60f to the value of the get request.
         private static float _RefreshRate;
+        private string _isBanned;
         private YieldInstruction _waitYieldInstruction;
         private YieldInstruction _halfWaitYieldInstruction;
         private readonly Hash<string, string> _cachedData = new();
@@ -184,9 +188,6 @@ namespace Oxide.Plugins
                     UpdateServerData();
                 }
             });
-
-            
-            
         }
 
         private void Loaded()
@@ -210,10 +211,10 @@ namespace Oxide.Plugins
             _Debug("------------------------------");
             _Debug("Method: StartCoroutines");
             // Start the getPlayerClientDataCoroutine
-            // ServerMgr.Instance.StartCoroutine(clientDataCoroutine = GetPlayerClientDataCoroutine());
+            ServerMgr.Instance.StartCoroutine(clientDataCoroutine = GetPlayerClientDataCoroutine());
 
             // Start the CreateServerDataDataCoroutine
-            ServerMgr.Instance.StartCoroutine(serverDataCoroutine = CreateServerDataDataCoroutine());
+            //ServerMgr.Instance.StartCoroutine(serverDataCoroutine = CreateServerDataDataCoroutine());
         }
 
         #region HelperFunctions
@@ -318,6 +319,52 @@ namespace Oxide.Plugins
             bodypart = bodypart.Replace("seff", "");
             bodypart = bodypart.ToUpper();
             return bodypart;
+        }
+
+        private void BanCheckCanUserLogin(BasePlayer player)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: BanCheckCanUserLogin");
+            _Debug($"Username: {player.displayName}");
+            _Debug($"Steam ID: {player.UserIDString}");
+            _Debug($"IP Address: {GetPlayerIPAddress(player)}");
+
+            if (!Configuration.Bans.SyncBans) return;
+
+            if (Configuration.Bans.BanByUsername)
+            {
+                _Debug("Checking Bans By Username");
+                BanCheckByUsername(player.displayName);
+            }
+
+            if (Configuration.Bans.BanBySteamID)
+            {
+                _Debug("Checking Bans By Steam ID");
+                BanCheckBySteamID(player.UserIDString);
+            }
+
+            if (Configuration.Bans.BanByIP)
+            {
+                _Debug("Checking Bans By IP Address");
+                BanCheckByIpAddress(GetPlayerIPAddress(player));
+            }
+
+            // Wait 10 seconds for the refresh rate coroutine to finish working then start the other coroutines
+            timer.In(10f, () =>
+            {
+                _Debug($"_isBanned: {_isBanned}");
+                if(_isBanned == null)
+                {
+                    _Debug("_isBanned is NULL. Kicking Player for Safety!");
+                    player.Kick("BanCheckFailed: _isBanned NULL");
+                }
+                if(_isBanned == "true")
+                {
+                    _Debug("Kicking Player!");
+                    //ServerUsers.Set(player.userID, ServerUsers.UserGroup.Banned, player.displayName, "You are banned from this server.");
+                    player.Kick("You are banned from this server.");
+                }
+            });
         }
 
         #endregion
@@ -431,6 +478,16 @@ namespace Oxide.Plugins
             _cachedData["username"] = name;
             _cachedData["steam_id"] = id;
             _cachedData["ip_address"] = address;
+            _cachedData["reason"] = reason;
+
+            return _cachedData;
+        }
+
+        private Hash<string, string> SetPlayerBannedData(string name, string id, string reason)
+        {
+            ClearCachedData();
+            _cachedData["username"] = name;
+            _cachedData["steam_id"] = id;
             _cachedData["reason"] = reason;
 
             return _cachedData;
@@ -586,6 +643,27 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
+        private Hash<string, string> SetBanCheckByUsernameData(string username)
+        {
+            ClearCachedData();
+            _cachedData["username"] = username;
+            return _cachedData;
+        }
+
+        private Hash<string, string> SetBanCheckBySteamIDData(string steamID)
+        {
+            ClearCachedData();
+            _cachedData["steamid"] = steamID;
+            return _cachedData;
+        }
+
+        private Hash<string, string> SetBanCheckByIPAddressData(string ipAddress)
+        {
+            ClearCachedData();
+            _cachedData["ipaddress"] = ipAddress;
+            return _cachedData;
+        }
+
         #endregion
 
         #region Harmony Helpers
@@ -684,21 +762,22 @@ namespace Oxide.Plugins
             _Debug("Method: OnPlayerConnected");
             _Debug($"Player: {player.displayName}/{player.UserIDString}");
 
-            CreatePlayerConnectionData(player, "connect");
+            //CreatePlayerConnectionData(player, "connect");
+            BanCheckCanUserLogin(player);
 
             _Debug("OnPlayerConnected End");
         }
 
-        private void OnPlayerDisconnected(BasePlayer player)
-    {
-        _Debug("------------------------------");
-        _Debug("Method: OnPlayerDisconnected");
-        _Debug($"Player: {player.displayName}/{player.UserIDString}");
+        /*private void OnPlayerDisconnected(BasePlayer player)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: OnPlayerDisconnected");
+            _Debug($"Player: {player.displayName}/{player.UserIDString}");
 
-        CreatePlayerConnectionData(player, "quit");
+            CreatePlayerConnectionData(player, "quit");
 
-        _Debug("OnPlayerDisconnected End");
-    }
+            _Debug("OnPlayerDisconnected End");
+        }*/
 
         #endregion
 
@@ -1187,6 +1266,36 @@ namespace Oxide.Plugins
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
+        public void BanCheckByUsername(string username)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: BanCheckByUsername");
+            _Debug($"Webhook: {Configuration.API.BanCheckRoute.Username}");
+            var data = SetBanCheckByUsernameData(username);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.BanCheckRoute.Username, "BanCheckByUsername");
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        public void BanCheckBySteamID(string steamID)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: BanCheckBySteamID");
+            _Debug($"Webhook: {Configuration.API.BanCheckRoute.SteamID}");
+            var data = SetBanCheckBySteamIDData(steamID);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.BanCheckRoute.SteamID, "BanCheckBySteamID");
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        public void BanCheckByIpAddress(string ipAddress)
+        {
+            _Debug("------------------------------");
+            _Debug("Method: BanCheckByIpAddress");
+            _Debug($"Webhook: {Configuration.API.BanCheckRoute.IPAddress}");
+            var data = SetBanCheckByIPAddressData(ipAddress);
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.BanCheckRoute.IPAddress, "BanCheckByIpAddress");
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
         private void CreatePlayerData(ClientPerformanceReport clientPerformanceReport)
         {
             _Debug("------------------------------");
@@ -1202,6 +1311,14 @@ namespace Oxide.Plugins
         private void CreatePlayerBannedData(string name, string id, string address, string reason)
         {
             var data = SetPlayerBannedData(name, id, address, reason);
+
+            webhookCoroutine = WebhookPostRequest(data, Configuration.API.PlayerBanDataRoute.Create);
+            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
+        }
+
+        private void CreatePlayerBannedData(string name, string id, string reason)
+        {
+            var data = SetPlayerBannedData(name, id, reason);
 
             webhookCoroutine = WebhookPostRequest(data, Configuration.API.PlayerBanDataRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
@@ -1350,24 +1467,31 @@ namespace Oxide.Plugins
 
         #region ConsoleCommands
 
-        [ConsoleCommand("test")]
-        private void TestConsoleCommand(ConsoleSystem.Arg arg = null)
+        [ConsoleCommand("ra.uploadbans")]
+        private void UploadBansConsoleCommand(ConsoleSystem.Arg arg)
         {
             _Debug("------------------------------");
-            _Debug("Method: TestConsoleCommand");
+            _Debug("Method: UploadBansConsoleCommand");
 
-            var data = SetServerDataData();
-            webhookCoroutine = WebhookPostRequest(data, Configuration.API.ServerDataDataRoute.Create);
-            ServerMgr.Instance.StartCoroutine(webhookCoroutine);
-            ConsoleLog("Sent");
-        }
-
-        [ConsoleCommand("testapi")]
-        private void TestApiConsoleCommand(ConsoleSystem.Arg arg = null)
-        {
-            _Debug("------------------------------");
-            _Debug("Method: TestApiConsoleCommand");
-
+            //ServerUsers.Set(player.userID, , player.displayName, "You are banned from this server.");
+            //var banlist = ;
+            _Debug("Getting List");
+            List<ServerUsers.User> banList = ServerUsers.GetAll(ServerUsers.UserGroup.Banned).ToList<ServerUsers.User>();
+            _Debug("List Got");
+            if(banList == null)
+            {
+                _Debug("Ban List Is Null. Nothing to Upload!");
+            } else
+            {
+                foreach (ServerUsers.User bannedUser in banList)
+                {
+                    // Here you can access properties and methods of the bannedUser object
+                    // For example, assuming the User object has a property called Name
+                    _Debug($"Banned Player Steam ID: {bannedUser.steamid.ToString()}");
+                    _Debug($"Banned Player Username: {bannedUser.username.ToString()}");
+                    CreatePlayerBannedData(bannedUser.username.ToString(), bannedUser.steamid.ToString(), "You Are Banned From This Server.");
+                }
+            }
         }
 
         #endregion
@@ -1399,6 +1523,9 @@ namespace Oxide.Plugins
             [JsonProperty(PropertyName = "General Options")]
             public GeneralOptions General { get; set; }
 
+            [JsonProperty(PropertyName = "Ban Options")]
+            public BanOptions Bans { get; set; }
+
             [JsonProperty(PropertyName = "Tracking Options")]
             public TrackingOptions Tracking { get; set; }
 
@@ -1423,6 +1550,21 @@ namespace Oxide.Plugins
                 public string APIToken { get; set; }
             }
 
+            public class BanOptions
+            {
+                [JsonProperty(PropertyName = "Sync Bans Across All Servers In Your Network?")]
+                public bool SyncBans { get; set; }
+
+                [JsonProperty(PropertyName = "Ban By Username?")]
+                public bool BanByUsername { get; set; }
+
+                [JsonProperty(PropertyName = "Ban By Steam ID?")]
+                public bool BanBySteamID { get; set; }
+
+                [JsonProperty(PropertyName = "Ban By IP?")]
+                public bool BanByIP { get; set; }
+            }
+
             public class TrackingOptions
             {
                 [JsonProperty(PropertyName = "Track Players Online Time?")]
@@ -1431,6 +1573,21 @@ namespace Oxide.Plugins
 
             public class APIOptions
             {
+                [JsonProperty(PropertyName = "BanCheck")]
+                public BanCheckRoutes BanCheckRoute { get; set; }
+
+                public class BanCheckRoutes
+                {
+                    [JsonProperty(PropertyName = "Username")]
+                    public string Username { get; set; }
+
+                    [JsonProperty(PropertyName = "SteamID")]
+                    public string SteamID { get; set; }
+
+                    [JsonProperty(PropertyName = "IPAddress")]
+                    public string IPAddress { get; set; }
+                }
+
                 [JsonProperty(PropertyName = "PlayerBanData")]
                 public PlayerBanDataRoutes PlayerBanDataRoute { get; set; }
 
@@ -1601,12 +1758,25 @@ namespace Oxide.Plugins
                     DiscordWebhook = "https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks",*/
                     APIToken = "7e0c91ce-c7c1-3304-8d40-9eab41cf29f6"
                 },
+                Bans = new ConfigData.BanOptions
+                {
+                    SyncBans = true,
+                    BanByUsername = false,
+                    BanBySteamID = true,
+                    BanByIP = false,
+                },
                 Tracking = new ConfigData.TrackingOptions
                 {
                     TrackPlayerOnlineTime = false
                 },
                 API = new ConfigData.APIOptions
                 {
+                    BanCheckRoute = new ConfigData.APIOptions.BanCheckRoutes
+                    {
+                        Username = "http://localhost:8000/api/v1/server/bans/check/username",
+                        SteamID = "http://localhost:8000/api/v1/server/bans/check/steamid",
+                        IPAddress = "http://localhost:8000/api/v1/server/bans/check/ipaddress",
+                    },
                     PlayerBanDataRoute = new ConfigData.APIOptions.PlayerBanDataRoutes
                     {
                         Create = "http://localhost:8000/api/v1/server/players/bans/create",
@@ -1680,7 +1850,7 @@ namespace Oxide.Plugins
         {
             ConsoleWarn("Config update detected! Updating config values...");
 
-            if (Configuration.Version < new VersionNumber(0, 0, 49))
+            if (Configuration.Version < _requiredVersion)
                 Configuration = GetBaseConfig();
 
             Configuration.Version = Version;
@@ -1829,6 +1999,21 @@ namespace Oxide.Plugins
                         else
                         {
                             _Debug("Failed to parse refresh rate from response.");
+                        }
+                    }
+
+                    // Update _isBanned if methodName is "BanCheckByUsername"
+                    if( methodName == "BanCheckByUsername" || methodName == "BanCheckBySteamID" || methodName == "BanCheckByIpAddress")
+                    {
+                        if(request.downloadHandler.text == "true")
+                        {
+                            _Debug("Banned: TRUE");
+                            _isBanned = "true";
+                        }
+                        else
+                        {
+                            _Debug("Banned: FALSE");
+                            _isBanned = "false";
                         }
                     }
 
