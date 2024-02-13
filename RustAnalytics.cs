@@ -32,7 +32,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.64";
+        private const string _PluginVersion = "0.0.66";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -42,6 +42,7 @@ namespace Oxide.Plugins
         Plugin RustAnalyticsPlaytimeTracker;
 
         // Misc Variables
+        // Only change the required version number here if the config needs to be updated.
         private VersionNumber _requiredVersion = new VersionNumber(0, 0, 64);
         private static RustAnalytics _pluginInstance;
         private string _webhookResponse;
@@ -60,6 +61,7 @@ namespace Oxide.Plugins
         private IEnumerator webhookCoroutine;
         private IEnumerator clientDataCoroutine;
         private IEnumerator serverDataCoroutine;
+        private IEnumerator isPluginOutdatedCoroutine;
 
         // Harmony Variables
         private HInstance _harmonyInstance;
@@ -201,6 +203,7 @@ namespace Oxide.Plugins
             if (webhookCoroutine != null) ServerMgr.Instance.StopCoroutine(webhookCoroutine);
             if (clientDataCoroutine != null) ServerMgr.Instance.StopCoroutine(clientDataCoroutine);
             if (serverDataCoroutine != null) ServerMgr.Instance.StopCoroutine(serverDataCoroutine);
+            if (isPluginOutdatedCoroutine != null) ServerMgr.Instance.StopCoroutine(isPluginOutdatedCoroutine);
 
             UnpatchHarmony();
             _pluginInstance = null;
@@ -215,6 +218,9 @@ namespace Oxide.Plugins
 
             // Start the CreateServerDataDataCoroutine
             ServerMgr.Instance.StartCoroutine(serverDataCoroutine = CreateServerDataDataCoroutine());
+
+            // Start the CreateServerDataDataCoroutine
+            ServerMgr.Instance.StartCoroutine(isPluginOutdatedCoroutine = GetRequiredPluginVersionCoroutine());
         }
 
         #region HelperFunctions
@@ -1914,6 +1920,23 @@ namespace Oxide.Plugins
             }
         }
 
+        private IEnumerator GetRequiredPluginVersionCoroutine()
+        {
+            _Debug("------------------------------");
+            _Debug("Starting IsPluginOutdated Coroutine");
+
+            while (true)
+            {
+
+                yield return _halfWaitYieldInstruction;
+
+                getRefreshRate();
+
+                _Debug($"Waiting {_RefreshRate} seconds to get refresh rate");
+                yield return _halfWaitYieldInstruction;
+            }
+        }
+
         /*private IEnumerator DiscordSendMessage(string msg)
         {
             if (Configuration.General.DiscordWebhookEnabled)
@@ -1978,6 +2001,7 @@ namespace Oxide.Plugins
                     else if (request.responseCode == 426) {
                         ConsoleError("RA_PLUGIN_OUTDATED: Your plugin is outdated. Please update your plugin. Download from here: https://codefling.com/plugins/rustanalytics");
                         _versionCheck = false;
+                        Interface.Oxide.UnloadPlugin("RustAnalytics");
                     }
                     else
                     {
