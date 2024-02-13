@@ -32,7 +32,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.63";
+        private const string _PluginVersion = "0.0.64";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -42,7 +42,7 @@ namespace Oxide.Plugins
         Plugin RustAnalyticsPlaytimeTracker;
 
         // Misc Variables
-        private VersionNumber _requiredVersion = new VersionNumber(0, 0, 63);
+        private VersionNumber _requiredVersion = new VersionNumber(0, 0, 64);
         private static RustAnalytics _pluginInstance;
         private string _webhookResponse;
         private SaveInfo _saveInfo = SaveInfo.Create(World.SaveFolderName + $"/player.blueprints.{Rust.Protocol.persistance}.db");
@@ -214,7 +214,7 @@ namespace Oxide.Plugins
             ServerMgr.Instance.StartCoroutine(clientDataCoroutine = GetPlayerClientDataCoroutine());
 
             // Start the CreateServerDataDataCoroutine
-            //ServerMgr.Instance.StartCoroutine(serverDataCoroutine = CreateServerDataDataCoroutine());
+            ServerMgr.Instance.StartCoroutine(serverDataCoroutine = CreateServerDataDataCoroutine());
         }
 
         #region HelperFunctions
@@ -762,13 +762,13 @@ namespace Oxide.Plugins
             _Debug("Method: OnPlayerConnected");
             _Debug($"Player: {player.displayName}/{player.UserIDString}");
 
-            //CreatePlayerConnectionData(player, "connect");
+            CreatePlayerConnectionData(player, "connect");
             BanCheckCanUserLogin(player);
 
             _Debug("OnPlayerConnected End");
         }
 
-        /*private void OnPlayerDisconnected(BasePlayer player)
+        private void OnPlayerDisconnected(BasePlayer player)
         {
             _Debug("------------------------------");
             _Debug("Method: OnPlayerDisconnected");
@@ -777,7 +777,7 @@ namespace Oxide.Plugins
             CreatePlayerConnectionData(player, "quit");
 
             _Debug("OnPlayerDisconnected End");
-        }*/
+        }
 
         #endregion
 
