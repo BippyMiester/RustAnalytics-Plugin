@@ -518,7 +518,7 @@ namespace Oxide.Plugins
             return _cachedData;
         }
 
-        private Hash<string, string> SetWeaponFireData(BasePlayer player, string bullet, string weapon)
+        /*private Hash<string, string> SetWeaponFireData(BasePlayer player, string bullet, string weapon)
         {
             ClearCachedData();
             _cachedData["username"] = player.displayName;
@@ -528,7 +528,7 @@ namespace Oxide.Plugins
             _cachedData["amount"] = "1";
 
             return _cachedData;
-        }
+        }*/
 
         private Hash<string, string> SetDestroyedContainersData(BasePlayer player, string owner, string type, string weapon, string grid, string x, string y, string z)
         {
@@ -858,6 +858,7 @@ namespace Oxide.Plugins
 
         
         #region WeaponFire
+        /*
         private void OnWeaponFired(BaseProjectile projectile, BasePlayer player, ItemModProjectile itemProjectile, object projectiles)
         {
             _Debug("------------------------------");
@@ -932,7 +933,7 @@ namespace Oxide.Plugins
 
             CreateWeaponFireData(player, rocketName, ammo);
         }
-
+        */
         #endregion
         
 
@@ -1346,13 +1347,13 @@ namespace Oxide.Plugins
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
         }
 
-        private void CreateWeaponFireData(BasePlayer player, string bullet, string weapon)
+        /*private void CreateWeaponFireData(BasePlayer player, string bullet, string weapon)
         {
             var data = SetWeaponFireData(player, bullet, weapon);
 
             webhookCoroutine = WebhookPostRequest(data, Configuration.API.WeaponFireRoute.Create);
             ServerMgr.Instance.StartCoroutine(webhookCoroutine);
-        }
+        }*/
 
         private void CreateDestroyedContainerData(BasePlayer player, string owner, string type, string weapon, string grid, string x, string y, string z)
         {
