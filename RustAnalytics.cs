@@ -769,7 +769,14 @@ namespace Oxide.Plugins
             _Debug($"Player: {player.displayName}/{player.UserIDString}");
 
             CreatePlayerConnectionData(player, "connect");
-            BanCheckCanUserLogin(player);
+
+            _Debug("Waiting 5 seconds for ban check.");
+            timer.In(5f, () =>
+            {
+                _Debug("Doing ban check.");
+                BanCheckCanUserLogin(player);
+            });
+            
 
             _Debug("OnPlayerConnected End");
         }
@@ -2030,16 +2037,15 @@ namespace Oxide.Plugins
                     // Update _isBanned if methodName is "BanCheckByUsername"
                     if( methodName == "BanCheckByUsername" || methodName == "BanCheckBySteamID" || methodName == "BanCheckByIpAddress")
                     {
+                        _Debug("BAN CHECK INITIATED!");
                         if(request.downloadHandler.text == "true")
                         {
                             _Debug("Banned: TRUE");
                             _isBanned = "true";
                         }
-                        else
-                        {
-                            _Debug("Banned: FALSE");
-                            _isBanned = "false";
-                        }
+                        
+                        _Debug("Banned: FALSE");
+                        _isBanned = "false";
                     }
 
                     bool APIKeyValid = request.downloadHandler.text.IndexOf("API Key Invalid", StringComparison.OrdinalIgnoreCase) >= 0;
