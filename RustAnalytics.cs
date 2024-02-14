@@ -1995,7 +1995,7 @@ namespace Oxide.Plugins
                 {
                     if (request.error.Contains("Too Many Requests"))
                     {
-                        Puts($"Rate Limit Exceeded... Waiting {_RefreshRate} seconds...");
+                        _Debug($"Rate Limit Exceeded... Waiting {_RefreshRate} seconds...");
                         yield return new WaitForSeconds(_RefreshRate);
                     }
                     else if (request.responseCode == 426) {
