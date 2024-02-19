@@ -51,7 +51,7 @@ def change_plugin_environment():
         filedata = file.read()
 
     # Modify the content
-    with open(file_path, 'w') as file:
+    with open('RustAnalytics.cs', 'w') as file:
         for line in lines:
             # Check if the line contains the variable assignment
             if '_PluginEnvironment' in line and 'DEVELOPMENT' in line:
