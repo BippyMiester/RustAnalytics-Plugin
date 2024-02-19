@@ -28,14 +28,14 @@ namespace Oxide.Plugins
     [Description(_PluginDescription)]
     public class RustAnalytics : RustPlugin
     {
-
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.67";
+        private const string _PluginVersion = "0.0.68";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
+        private const string _PluginEnvironment = "DEVELOPMENT";
 
         // Plugin References
         [PluginReference]
@@ -43,7 +43,7 @@ namespace Oxide.Plugins
 
         // Misc Variables
         // Only change the required version number here if the config needs to be updated.
-        private VersionNumber _requiredVersion = new VersionNumber(0, 0, 64);
+        private VersionNumber _requiredVersion = new VersionNumber(0, 0, 67);
         private static RustAnalytics _pluginInstance;
         private string _webhookResponse;
         private SaveInfo _saveInfo = SaveInfo.Create(World.SaveFolderName + $"/player.blueprints.{Rust.Protocol.persistance}.db");
@@ -170,6 +170,18 @@ namespace Oxide.Plugins
             {
                 ConsoleError("Your API key is not set. This might be the first time you're running the plugin. Set your API key. Follow the instructions in the README.md file.");
                 return;
+            }
+
+            // Check if the environment is in production
+            if (_PluginEnvironment == "PRODUCTION")
+            {
+                // Check that the API routes are set to production
+                if (Configuration.API.ServerDataRoute.getRefreshRate.Contains("localhost:8000"))
+                {
+                    ConsoleError("API is currently set to a developer environment. Please delete your configuration file, and reload the plugin.");
+                    Interface.Oxide.UnloadPlugin("RustAnalytics");
+                    return;
+                }
             }
 
             _Debug($"Initializing version check: {_versionCheck}");
@@ -2027,6 +2039,11 @@ namespace Oxide.Plugins
                         {
                             _RefreshRate = newRefreshRate;
                             _Debug("Refresh Rate Updated: " + _RefreshRate);
+                            if(_RefreshRate == 0f)
+                            {
+                                _Debug("Refresh Rate is set to 0. Unloading plugin. Refresh Rate check failed...");
+                                Interface.Oxide.UnloadPlugin("RustAnalytics");
+                            }
                         }
                         else
                         {
