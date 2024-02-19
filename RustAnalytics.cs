@@ -43,7 +43,7 @@ namespace Oxide.Plugins
 
         // Misc Variables
         // Only change the required version number here if the config needs to be updated.
-        private VersionNumber _requiredVersion = new VersionNumber(0, 0, 67);
+        private VersionNumber _requiredVersion = new VersionNumber(0, 0, 71);
         private static RustAnalytics _pluginInstance;
         private string _webhookResponse;
         private SaveInfo _saveInfo = SaveInfo.Create(World.SaveFolderName + $"/player.blueprints.{Rust.Protocol.persistance}.db");
