@@ -160,6 +160,7 @@ def main():
     print(f"Latest Release: {latest_release}")
     commit_messages = get_commit_messages_since_last_release(repo, latest_release, token)
 
+    change_plugin_environment()
     replace_url() # Call the new function to replace the URL
     replace_API_key()
 
