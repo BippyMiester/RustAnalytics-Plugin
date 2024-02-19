@@ -31,7 +31,7 @@ namespace Oxide.Plugins
         // Plugin Metadata
         private const string _PluginName = "RustAnalytics";
         private const string _PluginAuthor = "BippyMiester";
-        private const string _PluginVersion = "0.0.71";
+        private const string _PluginVersion = "0.0.72";
         private const string _PluginDescription = "Official Plugin for RustAnalytics.com";
         private const string _PluginDownloadLink = "https://codefling.com/plugins/rustanalytics";
         private const string _PluginWebsite = "https://rustanalytics.com/";
@@ -43,7 +43,7 @@ namespace Oxide.Plugins
 
         // Misc Variables
         // Only change the required version number here if the config needs to be updated.
-        private VersionNumber _requiredVersion = new VersionNumber(0, 0, 71);
+        private VersionNumber _requiredVersion = new VersionNumber(0, 0, 72);
         private static RustAnalytics _pluginInstance;
         private string _webhookResponse;
         private SaveInfo _saveInfo = SaveInfo.Create(World.SaveFolderName + $"/player.blueprints.{Rust.Protocol.persistance}.db");
