@@ -45,6 +45,21 @@ def calculate_sha256(file_path):
     with open(file_path, 'rb') as file:
         return hashlib.sha256(file.read()).hexdigest()
 
+# Set the Plugin Environment to PRODUCTION
+def change_plugin_environment():
+    with open('RustAnalytics.cs', 'r') as file:
+        filedata = file.read()
+
+    # Modify the content
+    with open(file_path, 'w') as file:
+        for line in lines:
+            # Check if the line contains the variable assignment
+            if '_PluginEnvironment' in line and 'DEVELOPMENT' in line:
+                # Replace DEVELOPMENT with PRODUCTION
+                line = line.replace('DEVELOPMENT', 'PRODUCTION')
+            # Write the line back to the file
+            file.write(line)
+
 # Function to replace URL in RustAnalytics.cs
 def replace_url():
     with open('RustAnalytics.cs', 'r') as file:
